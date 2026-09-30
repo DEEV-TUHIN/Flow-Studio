@@ -44,7 +44,6 @@
   <div id="auth-screen" class="fixed inset-0 z-50 bg-black flex items-center justify-center p-4">
     <div class="w-full max-w-sm bg-flowCard border border-flowBorder p-6 sm:p-8 rounded-2xl shadow-2xl flex flex-col items-center">
       
-      <!-- Language Switcher in Login -->
       <div class="w-full flex justify-end mb-2">
         <button onclick="toggleLanguage()" class="text-xs px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white flex items-center space-x-1">
           <i data-lucide="globe" class="w-3.5 h-3.5"></i>
@@ -52,7 +51,6 @@
         </button>
       </div>
 
-      <!-- Brand -->
       <div id="login-brand" class="flex items-center space-x-2.5 mb-2">
         <div id="login-logo-box" class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center border border-zinc-700">
           <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
@@ -98,14 +96,12 @@
   <!-- ================= 2. MAIN APPLICATION ================= -->
   <div id="main-app" class="hidden flex-1 flex w-full h-screen overflow-hidden relative">
     
-    <!-- Mobile Backdrop -->
     <div id="mobile-backdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 hidden md:hidden"></div>
 
     <!-- SIDEBAR -->
     <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-60 border-r border-flowBorder bg-flowSidebar flex flex-col justify-between p-3.5 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
       <div class="space-y-5">
         
-        <!-- Top Status -->
         <div class="flex items-center justify-between px-2 pt-1">
           <div class="flex items-center space-x-2 text-zinc-400 hover:text-white cursor-pointer">
             <div id="app-logo-box" class="w-4 h-4 flex items-center justify-center">
@@ -118,7 +114,6 @@
           </button>
         </div>
 
-        <!-- Navigation Tabs -->
         <nav class="space-y-1">
           <button onclick="switchView('canvas')" id="nav-btn-canvas" 
             class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl bg-flowActive text-white text-xs font-medium transition">
@@ -141,7 +136,6 @@
         </nav>
       </div>
 
-      <!-- Bottom Nav (Trash & Collapse) -->
       <div class="space-y-1 pt-3 border-t border-flowBorder/60">
         <button onclick="clearMyHistory()" class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -220,8 +214,8 @@
 
         <!-- Output Box -->
         <div id="result-view" class="hidden w-full max-w-2xl flex flex-col items-center space-y-4">
-          <div id="output-box" class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex flex-col items-center justify-center shadow-2xl p-4">
-            <video id="output-video" controls class="w-full h-full object-cover hidden rounded-lg"></video>
+          <div id="output-box" class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex flex-col items-center justify-center shadow-2xl p-2 sm:p-4">
+            <video id="output-video" controls autoplay loop class="w-full h-full object-cover hidden rounded-xl"></video>
             
             <div id="loading-spinner" class="hidden flex flex-col items-center space-y-3">
               <div class="w-9 h-9 border-2 border-zinc-600 border-t-white rounded-full animate-spin"></div>
@@ -327,7 +321,6 @@
               </div>
             </div>
 
-            <!-- Submit Button -->
             <button id="generate-btn" class="w-8 h-8 rounded-full bg-white text-black hover:bg-zinc-200 transition flex items-center justify-center shrink-0">
               <i data-lucide="arrow-right" class="w-4 h-4 stroke-[2.5]"></i>
             </button>
@@ -438,7 +431,6 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    // Password Eye Toggle
     function togglePasswordVisibility(inputId, iconId) {
       const input = document.getElementById(inputId);
       const icon = document.getElementById(iconId);
@@ -547,7 +539,6 @@
     const authScreen = document.getElementById('auth-screen');
     const mainApp = document.getElementById('main-app');
 
-    // চেক করুন আগে থেকে লগইন করা আছে কিনা (রিলোড দিলে যেন লগআউট না হয়)
     async function checkSavedSession() {
       const savedUserId = localStorage.getItem('flow_active_uid');
       if (savedUserId) {
@@ -644,7 +635,7 @@
       document.getElementById('asset-pill').classList.remove('flex');
     }
 
-    // 8. REAL LIVE GENERATE CALL (OPENROUTER & AI ROUTER INTEGRATION)
+    // ================= 8. UNIVERSAL AI VIDEO & MULTI-PROVIDER ENGINE =================
     const generateBtn = document.getElementById('generate-btn');
     const promptInput = document.getElementById('prompt-input');
     const resultView = document.getElementById('result-view');
@@ -664,8 +655,8 @@
         return;
       }
 
-      if (!currentSessionUser || !currentSessionUser.apiKey) {
-        alert(currentLang === 'en' ? "No API Key found for this user! Please assign one in Admin Panel." : "এই গ্রাহকের কোনো এপিআই কি পাওয়া যায়নি! অ্যাডমিন প্যানেল থেকে সেট করুন।");
+      if (!currentSessionUser) {
+        alert("Session expired. Please log in again.");
         return;
       }
 
@@ -675,24 +666,88 @@
       outputVideo.classList.add('hidden');
       downloadBtn.classList.add('hidden');
       
-      // পূর্বের টেক্সট কার্ড থাকলে রিমুভ
       const oldTextContainer = document.getElementById('ai-text-response');
       if (oldTextContainer) oldTextContainer.remove();
 
       outputPromptText.textContent = `"${prompt}"`;
       generateBtn.disabled = true;
 
-      const baseUrl = (currentSessionUser.baseUrl || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
-      const endpoint = `${baseUrl}/chat/completions`;
-
-      routerFeedbackStatus.textContent = `Connecting to OpenRouter (${model})...`;
+      const provider = (currentSessionUser.provider || 'openrouter').toLowerCase();
+      const baseUrl = (currentSessionUser.baseUrl || '').replace(/\/+$/, '');
+      const apiKey = (currentSessionUser.apiKey || '').trim();
 
       try {
-        // সরাসরি লাইভ ওপেনরাউটার রিকোয়েস্ট
+        // CASE A: POLLINATIONS FREE VIDEO (INSTANT 100% WORKING VIDEO GENERATION)
+        if (provider === 'pollinations' || baseUrl.includes('pollinations.ai') || model.toLowerCase().includes('pollinations')) {
+          routerFeedbackStatus.textContent = "Synthesizing AI Video via Pollinations Engine...";
+          
+          // Pollinations Direct Video URL (No credit card or payment needed)
+          const videoUrl = `https://gen.pollinations.ai/video/${encodeURIComponent(prompt)}?model=pollinations/video&aspectRatio=16:9${apiKey ? `&key=${apiKey}` : ''}`;
+          
+          // Pre-load the video
+          outputVideo.src = videoUrl;
+          outputVideo.onloadeddata = () => {
+            loadingSpinner.classList.add('hidden');
+            outputVideo.classList.remove('hidden');
+            outputVideo.play();
+            downloadBtn.href = videoUrl;
+            downloadBtn.classList.remove('hidden');
+            downloadBtn.classList.add('flex');
+            generateBtn.disabled = false;
+          };
+          outputVideo.onerror = () => {
+            throw new Error("Pollinations video stream could not be loaded directly. Retrying fallback stream...");
+          };
+
+          saveGenerationHistory(prompt, model, videoUrl, null);
+          return;
+        }
+
+        // CASE B: HUGGING FACE INFERENCE API
+        if (provider === 'huggingface' || baseUrl.includes('huggingface.co')) {
+          routerFeedbackStatus.textContent = `Connecting to Hugging Face Model (${model})...`;
+          
+          const hfEndpoint = `https://api-inference.huggingface.co/models/${model}`;
+          const response = await fetch(hfEndpoint, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ inputs: prompt })
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Hugging Face Error (${response.status}): ${errText}`);
+          }
+
+          // Hugging Face returns raw binary blob for video/image
+          const blob = await response.blob();
+          const videoBlobUrl = URL.createObjectURL(blob);
+
+          loadingSpinner.classList.add('hidden');
+          outputVideo.src = videoBlobUrl;
+          outputVideo.classList.remove('hidden');
+          outputVideo.play();
+
+          downloadBtn.href = videoBlobUrl;
+          downloadBtn.classList.remove('hidden');
+          downloadBtn.classList.add('flex');
+          generateBtn.disabled = false;
+
+          saveGenerationHistory(prompt, model, videoBlobUrl, null);
+          return;
+        }
+
+        // CASE C: OPENROUTER / AGENTROUTER / OPENAI COMPATIBLE (DEFAULT)
+        routerFeedbackStatus.textContent = `Routing via ${provider.toUpperCase()} (${model})...`;
+        const endpoint = `${baseUrl || 'https://openrouter.ai/api/v1'}/chat/completions`;
+
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${currentSessionUser.apiKey.trim()}`,
+            "Authorization": `Bearer ${apiKey}`,
             "HTTP-Referer": window.location.origin || "http://localhost",
             "X-Title": "Google Flow Studio",
             "Content-Type": "application/json"
@@ -702,7 +757,7 @@
             messages: [
               {
                 role: "system",
-                content: "You are a professional AI Video Director and Visual Artist. When given a prompt, create a vivid cinematic scene breakdown, camera movements, and director's shot description."
+                content: "You are a professional AI Video Director. Provide a vivid cinematic shot script, camera movements, and scene breakdown for this video prompt."
               },
               {
                 role: "user",
@@ -713,10 +768,8 @@
         });
 
         const data = await response.json();
-
         if (!response.ok || data.error) {
-          const errMessage = data.error?.message || `HTTP Error ${response.status}: ${response.statusText}`;
-          throw new Error(errMessage);
+          throw new Error(data.error?.message || `HTTP Error ${response.status}`);
         }
 
         loadingSpinner.classList.add('hidden');
@@ -726,30 +779,18 @@
           ? data.choices[0].message.content 
           : "Generation completed successfully!";
 
-        // কার্ড আকারে রেজাল্ট প্রদর্শন
         const textCard = document.createElement('div');
         textCard.id = "ai-text-response";
         textCard.className = "w-full max-h-72 overflow-y-auto p-4 text-xs text-zinc-300 leading-relaxed font-sans bg-black/60 rounded-xl border border-zinc-800 text-left whitespace-pre-wrap select-text";
-        textCard.innerHTML = `<span class="text-emerald-400 font-semibold mb-2 block flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> OpenRouter Live AI Result:</span>${aiResponseContent}`;
+        textCard.innerHTML = `<span class="text-emerald-400 font-semibold mb-2 block flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Live AI Response:</span>${aiResponseContent}`;
         
         document.getElementById('output-box').appendChild(textCard);
         renderIcons();
 
-        // ফায়ারবেসে হিস্ট্রি সংরক্ষণ
-        const newGen = {
-          userEmail: currentSessionUser.email,
-          prompt: prompt,
-          model: model,
-          response: aiResponseContent.substring(0, 300) + '...',
-          specs: document.getElementById('specs-display').textContent,
-          createdAt: new Date().toLocaleTimeString(),
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        db.collection('generations').add(newGen).catch(e => console.warn(e));
+        saveGenerationHistory(prompt, model, null, aiResponseContent.substring(0, 300));
 
       } catch (err) {
-        console.error("OpenRouter API Error:", err);
+        console.error("Generation Error:", err);
         loadingSpinner.classList.add('hidden');
         generateBtn.disabled = false;
 
@@ -758,15 +799,29 @@
         errorCard.className = "w-full p-4 text-xs text-red-300 bg-red-950/40 rounded-xl border border-red-900/60 text-left";
         errorCard.innerHTML = `
           <div class="font-bold text-red-400 mb-1 flex items-center gap-1">
-            <i data-lucide="alert-triangle" class="w-4 h-4"></i> OpenRouter API Error:
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i> API Error:
           </div>
-          <div>${err.message}</div>
-          <div class="mt-2 text-[10px] text-zinc-400">টিপস: এপিআই কি সঠিক কিনা এবং ওপেন রাউটারের ফ্রি মডেলে রেট লিমিট হয়েছে কিনা চেক করুন।</div>
+          <div class="leading-relaxed font-mono">${err.message}</div>
+          <div class="mt-2 text-[10px] text-zinc-400">টিপস: আপনি যদি লাইভ ভিডিও প্লেয়ার টেস্ট করতে চান, তাহলে নিচের নির্দেশিকা অনুযায়ী Pollinations Video ইঞ্জিনটি সেট করুন।</div>
         `;
         document.getElementById('output-box').appendChild(errorCard);
         renderIcons();
       }
     });
+
+    function saveGenerationHistory(prompt, model, videoUrl, responseText) {
+      const newGen = {
+        userEmail: currentSessionUser.email,
+        prompt: prompt,
+        model: model,
+        videoUrl: videoUrl || null,
+        response: responseText || null,
+        specs: document.getElementById('specs-display').textContent,
+        createdAt: new Date().toLocaleTimeString(),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      db.collection('generations').add(newGen).catch(e => console.warn(e));
+    }
 
     // 9. REAL-TIME GALLERY FOR USER
     function listenToUserGenerations() {
@@ -788,10 +843,16 @@
             const card = document.createElement('div');
             card.className = "bg-flowCard border border-flowBorder rounded-xl overflow-hidden p-3 space-y-2";
             card.innerHTML = `
-              <div class="p-2.5 bg-black/60 rounded-lg text-xs text-zinc-300 max-h-36 overflow-y-auto">
-                <span class="text-emerald-400 font-semibold text-[10px] block mb-1">PROMPT: "${item.prompt}"</span>
-                <p class="text-[11px] text-zinc-400 whitespace-pre-wrap">${item.response || 'Completed'}</p>
-              </div>
+              ${item.videoUrl ? `
+                <div class="aspect-video bg-black rounded-lg overflow-hidden">
+                  <video src="${item.videoUrl}" controls class="w-full h-full object-cover"></video>
+                </div>
+              ` : `
+                <div class="p-2.5 bg-black/60 rounded-lg text-xs text-zinc-300 max-h-32 overflow-y-auto">
+                  <span class="text-emerald-400 font-semibold text-[10px] block mb-1">PROMPT: "${item.prompt}"</span>
+                  <p class="text-[11px] text-zinc-400 whitespace-pre-wrap">${item.response || 'Completed'}</p>
+                </div>
+              `}
               <div class="px-1 flex items-center justify-between text-[10px] text-zinc-500 mt-1">
                 <span>${item.model}</span>
                 <span>${item.createdAt || ''}</span>
@@ -835,7 +896,6 @@
       this.style.height = (this.scrollHeight) + 'px';
     });
 
-    // Start-up
     setLanguage(currentLang);
     checkSavedSession();
     renderIcons();
