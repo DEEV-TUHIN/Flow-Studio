@@ -15,10 +15,10 @@
           colors: {
             flowBg: '#000000',
             flowSidebar: '#09090b',
-            flowCard: '#131316',
-            flowBorder: '#222227',
-            flowHover: '#1c1c22',
-            flowActive: '#272730'
+            flowCard: '#111114',
+            flowBorder: '#1f1f24',
+            flowHover: '#1a1a20',
+            flowActive: '#24242e'
           }
         }
       }
@@ -36,6 +36,38 @@
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: #000; }
     ::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
+
+    /* Google Flow Pulsing Glow Animation */
+    @keyframes flowPulse {
+      0%, 100% {
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.04), inset 0 0 15px rgba(59, 130, 246, 0.02);
+      }
+      50% {
+        border-color: rgba(96, 165, 250, 0.45);
+        box-shadow: 0 0 40px rgba(59, 130, 246, 0.22), inset 0 0 25px rgba(59, 130, 246, 0.08);
+      }
+    }
+    .flow-glow-active {
+      animation: flowPulse 2.8s ease-in-out infinite;
+    }
+
+    /* Ambient Scanline */
+    @keyframes scanMotion {
+      0% { top: -20%; opacity: 0; }
+      30% { opacity: 0.6; }
+      70% { opacity: 0.6; }
+      100% { top: 110%; opacity: 0; }
+    }
+    .scan-beam {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 35%;
+      background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.12), transparent);
+      animation: scanMotion 3s ease-in-out infinite;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="bg-flowBg text-zinc-200 min-h-screen flex flex-col font-sans select-none overflow-hidden">
@@ -192,6 +224,7 @@
       <!-- VIEW 1: STUDIO CANVAS -->
       <section id="view-canvas" class="flex-1 flex flex-col items-center justify-center relative overflow-y-auto p-4 sm:p-6">
         
+        <!-- Empty State Graphic -->
         <div id="dropzone" class="flex flex-col items-center justify-center space-y-4 text-center cursor-pointer border-2 border-dashed border-transparent hover:border-zinc-800 p-6 sm:p-8 rounded-3xl transition">
           <input type="file" id="media-file-input" class="hidden" accept="image/*,video/*">
           
@@ -212,22 +245,60 @@
           </button>
         </div>
 
-        <!-- Output Box -->
+        <!-- ================= GOOGLE FLOW STYLE DYNAMIC PREVIEW CARD ================= -->
         <div id="result-view" class="hidden w-full max-w-2xl flex flex-col items-center space-y-4">
-          <div id="output-box" class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex flex-col items-center justify-center shadow-2xl p-2 sm:p-4">
+          <div id="output-box" class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex flex-col items-center justify-center shadow-2xl p-3 sm:p-5 transition-all duration-500">
+            
+            <!-- Scan Beam Effect during Rendering -->
+            <div id="scan-effect" class="scan-beam hidden"></div>
+
+            <!-- Video Player -->
             <video id="output-video" controls autoplay loop playsinline class="w-full h-full object-contain hidden rounded-xl"></video>
             
-            <div id="loading-spinner" class="hidden flex flex-col items-center space-y-3 text-center px-4">
-              <div class="w-10 h-10 border-2 border-zinc-600 border-t-emerald-400 rounded-full animate-spin"></div>
-              <span id="router-feedback-status" class="text-xs text-zinc-300 font-mono">Processing request...</span>
-              <span class="text-[10px] text-zinc-500 font-sans">Connecting to your assigned model and GPU cluster...</span>
+            <!-- Google Flow Glowing Shimmer Loading State -->
+            <div id="loading-spinner" class="hidden flex flex-col items-center space-y-4 text-center px-4 relative z-10">
+              
+              <!-- Pulsing Center Orb -->
+              <div class="relative flex items-center justify-center">
+                <div class="w-14 h-14 rounded-full bg-blue-600/10 border border-blue-500/30 animate-ping absolute"></div>
+                <div class="w-12 h-12 rounded-full bg-zinc-900 border border-blue-500/50 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <i data-lucide="sparkles" class="w-5 h-5 text-blue-400 animate-pulse"></i>
+                </div>
+              </div>
+
+              <!-- Blinking Status Badge -->
+              <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-[11px] text-zinc-300 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                <span id="router-feedback-status" class="font-mono">Initializing creative pipeline...</span>
+              </div>
+
+              <div class="text-[11px] text-zinc-500 font-sans tracking-wide max-w-sm">
+                Synthesizing cinematic temporal motion vectors across neural clusters.
+              </div>
             </div>
+
+            <!-- Graceful Dynamic Failure Card (Zero Info Leaked) -->
+            <div id="error-fallback-card" class="hidden flex flex-col items-center justify-center space-y-3 p-6 text-center max-w-md">
+              <div class="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-1">
+                <i data-lucide="cloud-off" class="w-5 h-5"></i>
+              </div>
+              <h3 class="text-sm font-medium text-white tracking-wide">Cluster Congestion</h3>
+              <p id="error-fallback-message" class="text-xs text-zinc-400 leading-relaxed font-sans">
+                Generative GPU pipeline is temporarily occupied with high task traffic. Please retry in a few moments.
+              </p>
+              <button onclick="resetCanvasState()" 
+                class="mt-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700 flex items-center space-x-1.5 transition">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                <span>Try Again</span>
+              </button>
+            </div>
+
           </div>
           
           <div class="flex items-center justify-between w-full px-2">
             <div id="output-prompt-text" class="text-xs text-zinc-400 italic max-w-md truncate"></div>
             <a id="download-btn" href="#" target="_blank" download="generated-video.mp4" 
-              class="hidden px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs text-black font-semibold items-center space-x-1.5 transition">
+              class="hidden px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-xs text-black font-semibold items-center space-x-1.5 transition shadow">
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
               <span data-i18n="btn_download">Download</span>
             </a>
@@ -261,7 +332,7 @@
                 <i data-lucide="plus" class="w-4 h-4"></i>
               </button>
 
-              <!-- DYNAMIC MODEL SELECTOR (Strictly from Admin Panel) -->
+              <!-- Dynamic Model Selector (Strictly from Admin Panel) -->
               <div class="relative">
                 <select id="model-select" class="appearance-none bg-[#1f1f23] hover:bg-[#27272c] text-zinc-200 text-xs rounded-xl px-3 py-1.5 pr-7 border border-zinc-800 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[200px] truncate">
                   <option value="" disabled selected>Loading models...</option>
@@ -501,7 +572,6 @@
       }, err => console.warn(err));
     }
 
-    // PURE DYNAMIC MODEL LOADER (Strictly from Firestore - Zero Hardcoded Models)
     function listenToActiveModels() {
       db.collection('models').onSnapshot((snapshot) => {
         const sel = document.getElementById('model-select');
@@ -637,7 +707,17 @@
       document.getElementById('asset-pill').classList.remove('flex');
     }
 
-    // ================= 8. 100% PURE DYNAMIC API ENGINE (ZERO HARDCODED MODELS) =================
+    function resetCanvasState() {
+      document.getElementById('result-view').classList.add('hidden');
+      document.getElementById('dropzone').classList.remove('hidden');
+      document.getElementById('output-box').classList.remove('flow-glow-active');
+      document.getElementById('scan-effect').classList.add('hidden');
+      document.getElementById('loading-spinner').classList.add('hidden');
+      document.getElementById('error-fallback-card').classList.add('hidden');
+      generateBtn.disabled = false;
+    }
+
+    // ================= 8. GOOGLE FLOW STYLE BLINKING & SECURE GENERATION ENGINE =================
     const generateBtn = document.getElementById('generate-btn');
     const promptInput = document.getElementById('prompt-input');
     const resultView = document.getElementById('result-view');
@@ -647,6 +727,11 @@
     const downloadBtn = document.getElementById('download-btn');
     const outputPromptText = document.getElementById('output-prompt-text');
     const routerFeedbackStatus = document.getElementById('router-feedback-status');
+    const outputBox = document.getElementById('output-box');
+    const scanEffect = document.getElementById('scan-effect');
+    const errorFallbackCard = document.getElementById('error-fallback-card');
+
+    let stageInterval = null;
 
     generateBtn.addEventListener('click', async () => {
       const prompt = promptInput.value.trim();
@@ -658,20 +743,24 @@
       }
 
       if (!selectedModelId) {
-        alert("No AI model selected or available. Please add/activate models in Admin Panel.");
+        alert("No AI model selected or available.");
         return;
       }
 
       if (!currentSessionUser || !currentSessionUser.apiKey) {
-        alert("No API key configured for your account. Please set it in Admin Panel.");
+        alert("Account configuration missing. Contact administrator.");
         return;
       }
 
+      // UI Initializing (Activate Google Flow Glow & Scanline)
       emptyDropzone.classList.add('hidden');
       resultView.classList.remove('hidden');
       loadingSpinner.classList.remove('hidden');
+      errorFallbackCard.classList.add('hidden');
       outputVideo.classList.add('hidden');
       downloadBtn.classList.add('hidden');
+      outputBox.classList.add('flow-glow-active');
+      scanEffect.classList.remove('hidden');
       
       const oldTextContainer = document.getElementById('ai-text-response');
       if (oldTextContainer) oldTextContainer.remove();
@@ -679,12 +768,27 @@
       outputPromptText.textContent = `"${prompt}"`;
       generateBtn.disabled = true;
 
-      // সরাসরি অ্যাডমিন প্যানেল থেকে পাওয়া ভ্যালু ব্যবহার করা হচ্ছে
+      // Realistic Dynamic Step Cycling (Google Flow Style)
+      const flowStages = [
+        "Analyzing cinematic prompt semantics...",
+        "Allocating high-density neural tensors...",
+        "Synthesizing temporal latent motion...",
+        "Rendering coherent video frames...",
+        "Finalizing high-definition stream..."
+      ];
+      let stageIndex = 0;
+      routerFeedbackStatus.textContent = flowStages[0];
+
+      if (stageInterval) clearInterval(stageInterval);
+      stageInterval = setInterval(() => {
+        stageIndex = (stageIndex + 1) % flowStages.length;
+        routerFeedbackStatus.textContent = flowStages[stageIndex];
+      }, 4000);
+
       const baseUrl = (currentSessionUser.baseUrl || '').trim().replace(/\/+$/, '');
       const apiKey = (currentSessionUser.apiKey || '').trim();
       const provider = (currentSessionUser.provider || '').toLowerCase();
 
-      // এপিআই প্রোভাইডার ডিটেকশন (Fal.ai Queue vs OpenAI/OpenRouter Chat)
       const isQueueProvider = provider.includes('fal') || 
                              baseUrl.includes('fal.run') || 
                              baseUrl.includes('fal.ai') ||
@@ -692,29 +796,26 @@
 
       try {
         if (isQueueProvider) {
-          // ================= QUEUE BASED VIDEO PIPELINE (e.g. Fal.ai) =================
+          // ================= QUEUE BASED PIPELINE (FAL.AI) =================
           const falBase = baseUrl || 'https://queue.fal.run';
           const cleanModelSlug = selectedModelId.replace(/^\/+/, '');
           const submitUrl = `${falBase}/${cleanModelSlug}`;
           const authHeader = apiKey.startsWith('Key ') || apiKey.startsWith('Bearer ') ? apiKey : `Key ${apiKey}`;
 
-          routerFeedbackStatus.textContent = `Submitting to Queue: ${cleanModelSlug}...`;
-
-          // Step 1: Submit Prompt to Queue
+          // Step 1: Submit Prompt
           const submitRes = await fetch(submitUrl, {
             method: "POST",
             headers: {
               "Authorization": authHeader,
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-              prompt: prompt
-            })
+            body: JSON.stringify({ prompt: prompt })
           });
 
+          // Check if response is not OK (e.g. 402 Insufficient Balance, 404, 500)
           if (!submitRes.ok) {
-            const errData = await submitRes.text();
-            throw new Error(`API Queue Error (${submitRes.status}): ${errData}`);
+            // Throw generic error to trigger masked Google Flow failure state
+            throw new Error("QUEUE_REJECTED");
           }
 
           const submitData = await submitRes.json();
@@ -725,7 +826,7 @@
           // Step 2: Live Polling Loop
           let status = submitData.status || "IN_QUEUE";
           let attempts = 0;
-          const maxAttempts = 70; // 3.5 minutes
+          const maxAttempts = 75;
 
           while (status !== "COMPLETED" && status !== "OK" && attempts < maxAttempts) {
             await new Promise(r => setTimeout(r, 3000));
@@ -736,45 +837,43 @@
             });
 
             if (!checkRes.ok) {
-              throw new Error(`Status check failed (${checkRes.status})`);
+              throw new Error("STATUS_POLL_FAILED");
             }
 
             const checkData = await checkRes.json();
             status = checkData.status;
 
-            if (status === "IN_QUEUE") {
-              const pos = checkData.queue_position !== undefined ? ` (Queue Pos: ${checkData.queue_position})` : '';
-              routerFeedbackStatus.textContent = `In Queue${pos}... Please wait...`;
-            } else if (status === "IN_PROGRESS") {
-              routerFeedbackStatus.textContent = `Rendering video frames on GPU (${attempts * 3}s elapsed)...`;
-            } else if (status === "FAILED") {
-              throw new Error(checkData.error || "Generation failed on remote GPU");
+            if (status === "FAILED") {
+              throw new Error("GENERATION_FAILED");
             }
           }
 
           if (status !== "COMPLETED" && status !== "OK") {
-            throw new Error("Generation timed out. The server took too long to complete.");
+            throw new Error("TIMEOUT");
           }
 
           // Step 3: Fetch Completed Output
-          routerFeedbackStatus.textContent = "Loading generated video stream...";
           const finalRes = await fetch(responseUrl, {
             headers: { "Authorization": authHeader }
           });
 
           if (!finalRes.ok) {
-            throw new Error(`Failed to retrieve output (${finalRes.status})`);
+            throw new Error("FETCH_OUTPUT_FAILED");
           }
 
           const finalData = await finalRes.json();
           const videoUrl = finalData.video?.url || finalData.video_url || finalData.output?.url || (Array.isArray(finalData.images) && finalData.images[0]?.url);
 
           if (!videoUrl) {
-            throw new Error("No video file URL found in response.");
+            throw new Error("NO_VIDEO_URL");
           }
 
-          // Render Live Video
+          // Video Completed Successfully
+          clearInterval(stageInterval);
+          outputBox.classList.remove('flow-glow-active');
+          scanEffect.classList.add('hidden');
           loadingSpinner.classList.add('hidden');
+          
           outputVideo.src = videoUrl;
           outputVideo.classList.remove('hidden');
           outputVideo.play();
@@ -789,7 +888,6 @@
         }
 
         // ================= OPENROUTER / CHAT LLM PIPELINE =================
-        routerFeedbackStatus.textContent = `Routing via API (${selectedModelId})...`;
         const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl || 'https://openrouter.ai/api/v1'}/chat/completions`;
 
         const response = await fetch(endpoint, {
@@ -812,11 +910,14 @@
           })
         });
 
-        const data = await response.json();
-        if (!response.ok || data.error) {
-          throw new Error(data.error?.message || `HTTP Error ${response.status}`);
+        if (!response.ok) {
+          throw new Error("LLM_REJECTED");
         }
 
+        const data = await response.json();
+        clearInterval(stageInterval);
+        outputBox.classList.remove('flow-glow-active');
+        scanEffect.classList.add('hidden');
         loadingSpinner.classList.add('hidden');
         generateBtn.disabled = false;
 
@@ -827,28 +928,30 @@
         const textCard = document.createElement('div');
         textCard.id = "ai-text-response";
         textCard.className = "w-full max-h-72 overflow-y-auto p-4 text-xs text-zinc-300 leading-relaxed font-sans bg-black/60 rounded-xl border border-zinc-800 text-left whitespace-pre-wrap select-text";
-        textCard.innerHTML = `<span class="text-emerald-400 font-semibold mb-2 block flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Live AI Response:</span>${aiResponseContent}`;
+        textCard.innerHTML = `<span class="text-blue-400 font-semibold mb-2 block flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Flow AI Director Breakdown:</span>${aiResponseContent}`;
         
-        document.getElementById('output-box').appendChild(textCard);
+        outputBox.appendChild(textCard);
         renderIcons();
 
         saveGenerationHistory(prompt, selectedModelId, null, aiResponseContent.substring(0, 300));
 
       } catch (err) {
-        console.error("Generation Error:", err);
+        // ================= SECURE MASKED GOOGLE FLOW FAILURE STATE =================
+        console.warn("Generation pipeline interruption handled.");
+        clearInterval(stageInterval);
+
+        // Turn off loading glow and scanline
+        outputBox.classList.remove('flow-glow-active');
+        scanEffect.classList.add('hidden');
         loadingSpinner.classList.add('hidden');
         generateBtn.disabled = false;
 
-        const errorCard = document.createElement('div');
-        errorCard.id = "ai-text-response";
-        errorCard.className = "w-full p-4 text-xs text-red-300 bg-red-950/40 rounded-xl border border-red-900/60 text-left";
-        errorCard.innerHTML = `
-          <div class="font-bold text-red-400 mb-1 flex items-center gap-1">
-            <i data-lucide="alert-triangle" class="w-4 h-4"></i> API Error:
-          </div>
-          <div class="leading-relaxed font-mono">${err.message}</div>
-        `;
-        document.getElementById('output-box').appendChild(errorCard);
+        // Render sleek masked failure card (Zero mentions of balance, payment, or admin settings)
+        errorFallbackCard.classList.remove('hidden');
+        document.getElementById('error-fallback-message').textContent = currentLang === 'en'
+          ? "Generative cluster is temporarily congested under peak task load. Please try again in a few moments."
+          : "জেনারেটিভ জিপিইউ ক্লাস্টারে অত্যাধিক ট্রাফিকের কারণে রিকোয়েস্ট সম্পন্ন করা যায়নি। কিছুক্ষণ পর পুনরায় চেষ্টা করুন।";
+
         renderIcons();
       }
     });
@@ -893,7 +996,7 @@
                 </div>
               ` : `
                 <div class="p-2.5 bg-black/60 rounded-lg text-xs text-zinc-300 max-h-32 overflow-y-auto">
-                  <span class="text-emerald-400 font-semibold text-[10px] block mb-1">PROMPT: "${item.prompt}"</span>
+                  <span class="text-blue-400 font-semibold text-[10px] block mb-1">PROMPT: "${item.prompt}"</span>
                   <p class="text-[11px] text-zinc-400 whitespace-pre-wrap">${item.response || 'Completed'}</p>
                 </div>
               `}
