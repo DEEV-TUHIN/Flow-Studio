@@ -71,8 +71,13 @@
 
         <div>
           <label data-i18n="password_label" class="block text-xs font-medium text-zinc-400 mb-1">Password</label>
-          <input type="password" id="login-password" required placeholder="••••••••"
-            class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors">
+          <div class="relative">
+            <input type="password" id="login-password" required placeholder="••••••••"
+              class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 pr-10 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors">
+            <button type="button" onclick="togglePasswordVisibility('login-password', 'eye-icon-login')" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white">
+              <i id="eye-icon-login" data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
 
         <div id="login-error" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-900/50 p-2.5 rounded-lg text-center"></div>
@@ -213,9 +218,10 @@
           </button>
         </div>
 
+        <!-- Output Box -->
         <div id="result-view" class="hidden w-full max-w-2xl flex flex-col items-center space-y-4">
-          <div class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex items-center justify-center shadow-2xl">
-            <video id="output-video" controls class="w-full h-full object-cover hidden"></video>
+          <div id="output-box" class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex flex-col items-center justify-center shadow-2xl p-4">
+            <video id="output-video" controls class="w-full h-full object-cover hidden rounded-lg"></video>
             
             <div id="loading-spinner" class="hidden flex flex-col items-center space-y-3">
               <div class="w-9 h-9 border-2 border-zinc-600 border-t-white rounded-full animate-spin"></div>
@@ -260,7 +266,7 @@
                 <i data-lucide="plus" class="w-4 h-4"></i>
               </button>
 
-              <!-- Dynamic Model Selector (Synced with Firestore in Real-time) -->
+              <!-- Dynamic Model Selector -->
               <div class="relative">
                 <select id="model-select" class="appearance-none bg-[#1f1f23] hover:bg-[#27272c] text-zinc-200 text-xs rounded-xl px-3 py-1.5 pr-7 border border-zinc-800 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[180px] truncate">
                   <option value="" disabled selected>Loading models...</option>
@@ -336,7 +342,7 @@
 
   <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    // 1. FIREBASE CONFIGURATION (Connected with provided credentials)
+    // 1. FIREBASE CONFIGURATION
     const firebaseConfig = {
       apiKey: "AIzaSyDdtiWw6gzYFqSyuq2-ufFzmJ1PZyL2bCE",
       authDomain: "flow-studio-a283b.firebaseapp.com",
@@ -384,7 +390,7 @@
         email_label: "জিমেইল / ইমেইল",
         password_label: "পাসওয়ার্ড",
         btn_login: "লগইন করুন",
-        login_footer_note: "অ্যাকাউন্ট তৈরি বা এপিআই কানেকশনের জন্য অ্যাডমিনের সাথে যোগাযোগ করুন।",
+        login_footer_note: "অ্যাকাউন্ট তৈরি জন্য অ্যাডমিনের সাথে যোগাযোগ করুন।",
         nav_studio: "স্টুডিও ক্যানভাস",
         nav_all_media: "অল মিডিয়া",
         nav_characters: "ক্যারেক্টার",
@@ -432,7 +438,21 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    // 3. FIXED SPECS POPOVER
+    // Password Eye Toggle
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        input.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+      }
+      renderIcons();
+    }
+
+    // 3. SPECS POPOVER
     const specsPopover = document.getElementById('specs-popover');
     function toggleSpecsPopover(e) {
       if (e) e.stopPropagation();
@@ -466,7 +486,7 @@
     }
     backdrop.addEventListener('click', toggleMobileSidebar);
 
-    // 5. FIRESTORE REAL-TIME BRANDING & MODEL SYNC
+    // 5. FIRESTORE REAL-TIME SYNC
     function listenToSiteConfig() {
       db.collection('settings').doc('site_config').onSnapshot((doc) => {
         if (doc.exists) {
@@ -518,7 +538,7 @@
     listenToSiteConfig();
     listenToActiveModels();
 
-    // 6. CLIENT AUTHENTICATION WITH FIRESTORE
+    // 6. CLIENT AUTHENTICATION WITH SESSION PERSISTENCE
     let currentSessionUser = null;
     let attachedAsset = null;
 
@@ -526,6 +546,37 @@
     const loginError = document.getElementById('login-error');
     const authScreen = document.getElementById('auth-screen');
     const mainApp = document.getElementById('main-app');
+
+    // চেক করুন আগে থেকে লগইন করা আছে কিনা (রিলোড দিলে যেন লগআউট না হয়)
+    async function checkSavedSession() {
+      const savedUserId = localStorage.getItem('flow_active_uid');
+      if (savedUserId) {
+        try {
+          const doc = await db.collection('users').doc(savedUserId).get();
+          if (doc.exists && doc.data().active !== false) {
+            startUserSession({ id: doc.id, ...doc.data() });
+          } else {
+            localStorage.removeItem('flow_active_uid');
+          }
+        } catch (e) {
+          console.error("Session restoration error:", e);
+        }
+      }
+    }
+
+    function startUserSession(userData) {
+      currentSessionUser = userData;
+      localStorage.setItem('flow_active_uid', userData.id);
+
+      authScreen.classList.add('hidden');
+      mainApp.classList.remove('hidden');
+
+      document.getElementById('user-display-email').textContent = userData.email;
+      document.getElementById('user-avatar').textContent = (userData.email || 'U').charAt(0).toUpperCase();
+
+      listenToUserGenerations();
+      renderIcons();
+    }
 
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -556,24 +607,17 @@
           return;
         }
 
-        currentSessionUser = userFound;
-        authScreen.classList.add('hidden');
-        mainApp.classList.remove('hidden');
-
-        document.getElementById('user-display-email').textContent = userFound.email;
-        document.getElementById('user-avatar').textContent = userFound.email.charAt(0).toUpperCase();
-
-        listenToUserGenerations();
-        renderIcons();
+        startUserSession(userFound);
 
       } catch (err) {
         console.error(err);
-        loginError.textContent = "Firebase connection error: " + err.message;
+        loginError.textContent = "Firebase error: " + err.message;
         loginError.classList.remove('hidden');
       }
     });
 
     document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('flow_active_uid');
       currentSessionUser = null;
       mainApp.classList.add('hidden');
       authScreen.classList.remove('hidden');
@@ -600,7 +644,7 @@
       document.getElementById('asset-pill').classList.remove('flex');
     }
 
-    // 8. GENERATE VIDEO
+    // 8. REAL LIVE GENERATE CALL (OPENROUTER & AI ROUTER INTEGRATION)
     const generateBtn = document.getElementById('generate-btn');
     const promptInput = document.getElementById('prompt-input');
     const resultView = document.getElementById('result-view');
@@ -614,53 +658,114 @@
     generateBtn.addEventListener('click', async () => {
       const prompt = promptInput.value.trim();
       const model = document.getElementById('model-select').value;
-      if (!prompt) return;
+      
+      if (!prompt) {
+        alert(currentLang === 'en' ? "Please enter a prompt first!" : "অনুগ্রহ করে একটি প্রম্পট লিখুন!");
+        return;
+      }
+
+      if (!currentSessionUser || !currentSessionUser.apiKey) {
+        alert(currentLang === 'en' ? "No API Key found for this user! Please assign one in Admin Panel." : "এই গ্রাহকের কোনো এপিআই কি পাওয়া যায়নি! অ্যাডমিন প্যানেল থেকে সেট করুন।");
+        return;
+      }
 
       emptyDropzone.classList.add('hidden');
       resultView.classList.remove('hidden');
       loadingSpinner.classList.remove('hidden');
       outputVideo.classList.add('hidden');
       downloadBtn.classList.add('hidden');
+      
+      // পূর্বের টেক্সট কার্ড থাকলে রিমুভ
+      const oldTextContainer = document.getElementById('ai-text-response');
+      if (oldTextContainer) oldTextContainer.remove();
+
       outputPromptText.textContent = `"${prompt}"`;
       generateBtn.disabled = true;
 
-      const endpoint = currentSessionUser.baseUrl || 'https://openrouter.ai/api/v1';
-      routerFeedbackStatus.textContent = `Routing via ${currentSessionUser.provider || 'Router'} (${endpoint})...`;
+      const baseUrl = (currentSessionUser.baseUrl || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
+      const endpoint = `${baseUrl}/chat/completions`;
 
-      setTimeout(async () => {
-        const dummyVideos = [
-          "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-          "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
-        ];
-        const vid = dummyVideos[Math.floor(Math.random() * dummyVideos.length)];
+      routerFeedbackStatus.textContent = `Connecting to OpenRouter (${model})...`;
+
+      try {
+        // সরাসরি লাইভ ওপেনরাউটার রিকোয়েস্ট
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${currentSessionUser.apiKey.trim()}`,
+            "HTTP-Referer": window.location.origin || "http://localhost",
+            "X-Title": "Google Flow Studio",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: model || "deepseek/deepseek-r1:free",
+            messages: [
+              {
+                role: "system",
+                content: "You are a professional AI Video Director and Visual Artist. When given a prompt, create a vivid cinematic scene breakdown, camera movements, and director's shot description."
+              },
+              {
+                role: "user",
+                content: prompt
+              }
+            ]
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+          const errMessage = data.error?.message || `HTTP Error ${response.status}: ${response.statusText}`;
+          throw new Error(errMessage);
+        }
 
         loadingSpinner.classList.add('hidden');
-        outputVideo.src = vid;
-        outputVideo.classList.remove('hidden');
-        outputVideo.play();
-
-        downloadBtn.href = vid;
-        downloadBtn.classList.remove('hidden');
-        downloadBtn.classList.add('flex');
         generateBtn.disabled = false;
 
+        const aiResponseContent = data.choices && data.choices[0]?.message?.content 
+          ? data.choices[0].message.content 
+          : "Generation completed successfully!";
+
+        // কার্ড আকারে রেজাল্ট প্রদর্শন
+        const textCard = document.createElement('div');
+        textCard.id = "ai-text-response";
+        textCard.className = "w-full max-h-72 overflow-y-auto p-4 text-xs text-zinc-300 leading-relaxed font-sans bg-black/60 rounded-xl border border-zinc-800 text-left whitespace-pre-wrap select-text";
+        textCard.innerHTML = `<span class="text-emerald-400 font-semibold mb-2 block flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> OpenRouter Live AI Result:</span>${aiResponseContent}`;
+        
+        document.getElementById('output-box').appendChild(textCard);
+        renderIcons();
+
+        // ফায়ারবেসে হিস্ট্রি সংরক্ষণ
         const newGen = {
           userEmail: currentSessionUser.email,
-          prompt,
-          model,
-          videoUrl: vid,
+          prompt: prompt,
+          model: model,
+          response: aiResponseContent.substring(0, 300) + '...',
           specs: document.getElementById('specs-display').textContent,
           createdAt: new Date().toLocaleTimeString(),
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        try {
-          await db.collection('generations').add(newGen);
-        } catch(e) {
-          console.error("Firestore save error:", e);
-        }
+        db.collection('generations').add(newGen).catch(e => console.warn(e));
 
-      }, 3500);
+      } catch (err) {
+        console.error("OpenRouter API Error:", err);
+        loadingSpinner.classList.add('hidden');
+        generateBtn.disabled = false;
+
+        const errorCard = document.createElement('div');
+        errorCard.id = "ai-text-response";
+        errorCard.className = "w-full p-4 text-xs text-red-300 bg-red-950/40 rounded-xl border border-red-900/60 text-left";
+        errorCard.innerHTML = `
+          <div class="font-bold text-red-400 mb-1 flex items-center gap-1">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i> OpenRouter API Error:
+          </div>
+          <div>${err.message}</div>
+          <div class="mt-2 text-[10px] text-zinc-400">টিপস: এপিআই কি সঠিক কিনা এবং ওপেন রাউটারের ফ্রি মডেলে রেট লিমিট হয়েছে কিনা চেক করুন।</div>
+        `;
+        document.getElementById('output-box').appendChild(errorCard);
+        renderIcons();
+      }
     });
 
     // 9. REAL-TIME GALLERY FOR USER
@@ -681,17 +786,15 @@
           snapshot.forEach((doc) => {
             const item = doc.data();
             const card = document.createElement('div');
-            card.className = "bg-flowCard border border-flowBorder rounded-xl overflow-hidden p-2.5 space-y-2";
+            card.className = "bg-flowCard border border-flowBorder rounded-xl overflow-hidden p-3 space-y-2";
             card.innerHTML = `
-              <div class="aspect-video bg-black rounded-lg overflow-hidden">
-                <video src="${item.videoUrl}" controls class="w-full h-full object-cover"></video>
+              <div class="p-2.5 bg-black/60 rounded-lg text-xs text-zinc-300 max-h-36 overflow-y-auto">
+                <span class="text-emerald-400 font-semibold text-[10px] block mb-1">PROMPT: "${item.prompt}"</span>
+                <p class="text-[11px] text-zinc-400 whitespace-pre-wrap">${item.response || 'Completed'}</p>
               </div>
-              <div class="px-1">
-                <p class="text-xs text-zinc-200 font-medium truncate">${item.prompt}</p>
-                <div class="flex items-center justify-between text-[10px] text-zinc-500 mt-1">
-                  <span>${item.model}</span>
-                  <span>${item.createdAt || ''}</span>
-                </div>
+              <div class="px-1 flex items-center justify-between text-[10px] text-zinc-500 mt-1">
+                <span>${item.model}</span>
+                <span>${item.createdAt || ''}</span>
               </div>
             `;
             grid.appendChild(card);
@@ -721,7 +824,7 @@
     }
 
     async function clearMyHistory() {
-      if (confirm(currentLang === 'en' ? "Clear all your generated videos?" : "আপনার তৈরি করা সকল ভিডিও হিস্ট্রি মুছে ফেলবেন?")) {
+      if (confirm(currentLang === 'en' ? "Clear all your generated history?" : "আপনার তৈরি করা সকল হিস্ট্রি মুছে ফেলবেন?")) {
         const snap = await db.collection('generations').where('userEmail', '==', currentSessionUser.email).get();
         snap.forEach(d => d.ref.delete());
       }
@@ -732,7 +835,9 @@
       this.style.height = (this.scrollHeight) + 'px';
     });
 
+    // Start-up
     setLanguage(currentLang);
+    checkSavedSession();
     renderIcons();
   </script>
 </body>
