@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="page-title">Google Flow</title>
   
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -25,10 +24,8 @@
     }
   </script>
 
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Firebase Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -37,360 +34,134 @@
     ::-webkit-scrollbar-track { background: #000; }
     ::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
 
-    /* Google Flow Pulsing Glow Animation */
     @keyframes flowPulse {
       0%, 100% {
         border-color: rgba(255, 255, 255, 0.08);
-        box-shadow: 0 0 20px rgba(59, 130, 246, 0.04), inset 0 0 15px rgba(59, 130, 246, 0.02);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.04);
       }
       50% {
         border-color: rgba(96, 165, 250, 0.45);
-        box-shadow: 0 0 40px rgba(59, 130, 246, 0.22), inset 0 0 25px rgba(59, 130, 246, 0.08);
+        box-shadow: 0 0 40px rgba(59, 130, 246, 0.25);
       }
     }
-    .flow-glow-active {
-      animation: flowPulse 2.8s ease-in-out infinite;
-    }
-
-    /* Ambient Scanline */
-    @keyframes scanMotion {
-      0% { top: -20%; opacity: 0; }
-      30% { opacity: 0.6; }
-      70% { opacity: 0.6; }
-      100% { top: 110%; opacity: 0; }
-    }
-    .scan-beam {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 35%;
-      background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.12), transparent);
-      animation: scanMotion 3s ease-in-out infinite;
-      pointer-events: none;
-    }
+    .flow-glow-active { animation: flowPulse 2.8s ease-in-out infinite; }
   </style>
 </head>
 <body class="bg-flowBg text-zinc-200 min-h-screen flex flex-col font-sans select-none overflow-hidden">
 
-  <!-- ================= 1. LOGIN SCREEN ================= -->
+  <!-- LOGIN -->
   <div id="auth-screen" class="fixed inset-0 z-50 bg-black flex items-center justify-center p-4">
-    <div class="w-full max-w-sm bg-flowCard border border-flowBorder p-6 sm:p-8 rounded-2xl shadow-2xl flex flex-col items-center">
-      
-      <div class="w-full flex justify-end mb-2">
-        <button onclick="toggleLanguage()" class="text-xs px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white flex items-center space-x-1">
-          <i data-lucide="globe" class="w-3.5 h-3.5"></i>
-          <span class="lang-label font-mono">BN</span>
-        </button>
-      </div>
-
-      <div id="login-brand" class="flex items-center space-x-2.5 mb-2">
-        <div id="login-logo-box" class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center border border-zinc-700">
+    <div class="w-full max-w-sm bg-flowCard border border-flowBorder p-8 rounded-2xl shadow-2xl flex flex-col items-center">
+      <div class="flex items-center space-x-2.5 mb-2">
+        <div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center border border-zinc-700">
           <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
         </div>
-        <span id="login-site-name" class="text-xl font-semibold tracking-wide text-white">Google Flow</span>
+        <span class="text-xl font-semibold tracking-wide text-white">Google Flow</span>
       </div>
-
-      <p data-i18n="login_subtitle" class="text-xs text-zinc-400 mb-6 text-center">Login with your assigned credentials</p>
+      <p class="text-xs text-zinc-400 mb-6 text-center">Login with your assigned credentials</p>
 
       <form id="login-form" class="w-full space-y-4">
         <div>
-          <label data-i18n="email_label" class="block text-xs font-medium text-zinc-400 mb-1">Gmail / Email</label>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Gmail / Email</label>
           <input type="email" id="login-email" required placeholder="client@gmail.com"
-            class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors">
+            class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500">
         </div>
-
         <div>
-          <label data-i18n="password_label" class="block text-xs font-medium text-zinc-400 mb-1">Password</label>
-          <div class="relative">
-            <input type="password" id="login-password" required placeholder="••••••••"
-              class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 pr-10 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors">
-            <button type="button" onclick="togglePasswordVisibility('login-password', 'eye-icon-login')" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white">
-              <i id="eye-icon-login" data-lucide="eye" class="w-4 h-4"></i>
-            </button>
-          </div>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Password</label>
+          <input type="password" id="login-password" required placeholder="••••••••"
+            class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500">
         </div>
 
-        <div id="login-error" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-900/50 p-2.5 rounded-lg text-center"></div>
+        <div id="login-error" class="hidden text-xs text-red-400 bg-red-950/40 p-2.5 rounded-lg text-center"></div>
 
-        <button type="submit" id="btn-login-submit"
-          class="w-full py-2.5 bg-white text-black font-semibold text-sm rounded-xl hover:bg-zinc-200 transition-all flex items-center justify-center space-x-2">
-          <span data-i18n="btn_login">Sign In</span>
-          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        <button type="submit" class="w-full py-2.5 bg-white text-black font-semibold text-sm rounded-xl hover:bg-zinc-200 transition">
+          Sign In
         </button>
       </form>
-
-      <div data-i18n="login_footer_note" class="mt-6 text-[11px] text-zinc-500 text-center">
-        Contact administrator to get an account.
-      </div>
     </div>
   </div>
 
-  <!-- ================= 2. MAIN APPLICATION ================= -->
-  <div id="main-app" class="hidden flex-1 flex w-full h-screen overflow-hidden relative">
-    
-    <div id="mobile-backdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 hidden md:hidden"></div>
-
-    <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-60 border-r border-flowBorder bg-flowSidebar flex flex-col justify-between p-3.5 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+  <!-- MAIN APP -->
+  <div id="main-app" class="hidden flex-1 flex w-full h-screen overflow-hidden">
+    <aside class="w-60 border-r border-flowBorder bg-flowSidebar flex flex-col justify-between p-3.5">
       <div class="space-y-5">
-        
-        <div class="flex items-center justify-between px-2 pt-1">
-          <div class="flex items-center space-x-2 text-zinc-400 hover:text-white cursor-pointer">
-            <div id="app-logo-box" class="w-4 h-4 flex items-center justify-center">
-              <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
-            </div>
-            <span id="app-site-name" class="text-xs font-medium text-white truncate max-w-[120px]">Google Flow</span>
-          </div>
-          <button onclick="toggleMobileSidebar()" class="md:hidden text-zinc-400 hover:text-white">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
+        <div class="flex items-center space-x-2 px-2 pt-1 text-white">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span class="text-xs font-medium">Google Flow Pro</span>
         </div>
-
         <nav class="space-y-1">
-          <button onclick="switchView('canvas')" id="nav-btn-canvas" 
-            class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl bg-flowActive text-white text-xs font-medium transition">
+          <button class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl bg-flowActive text-white text-xs font-medium">
             <i data-lucide="play-square" class="w-4 h-4 text-blue-400"></i>
-            <span data-i18n="nav_studio" class="sidebar-text">Studio Canvas</span>
-          </button>
-          <button onclick="switchView('gallery')" id="nav-btn-gallery" 
-            class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-            <i data-lucide="layout-grid" class="w-4 h-4"></i>
-            <span data-i18n="nav_all_media" class="sidebar-text">All media</span>
-          </button>
-          <button class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-            <i data-lucide="user" class="w-4 h-4"></i>
-            <span data-i18n="nav_characters" class="sidebar-text">Characters</span>
-          </button>
-          <button class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-            <i data-lucide="film" class="w-4 h-4"></i>
-            <span data-i18n="nav_scenes" class="sidebar-text">Scenes</span>
+            <span>Studio Canvas</span>
           </button>
         </nav>
       </div>
 
-      <div class="space-y-1 pt-3 border-t border-flowBorder/60">
-        <button onclick="clearMyHistory()" class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-          <span data-i18n="nav_clear_history" class="sidebar-text">Clear History</span>
-        </button>
-        <button id="collapse-btn" class="hidden md:flex w-full items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-          <i data-lucide="panel-left-close" class="w-4 h-4"></i>
-          <span data-i18n="nav_collapse" class="sidebar-text">Collapse</span>
+      <div class="pt-3 border-t border-flowBorder/60">
+        <div id="user-display-email" class="text-[11px] text-zinc-500 truncate px-2 mb-2"></div>
+        <button id="logout-btn" class="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-red-400 hover:bg-zinc-900 text-xs transition">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <span>Logout</span>
         </button>
       </div>
     </aside>
 
-    <!-- MAIN STAGE -->
     <main class="flex-1 flex flex-col h-full bg-flowBg relative min-w-0">
-      
-      <!-- TOP NAVIGATION BAR -->
-      <header class="h-14 border-b border-flowBorder px-4 sm:px-6 flex items-center justify-between gap-2">
-        <div class="flex items-center space-x-2 flex-1 max-w-md">
-          <button onclick="toggleMobileSidebar()" class="md:hidden p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900">
-            <i data-lucide="menu" class="w-4 h-4"></i>
-          </button>
-          <div class="relative w-full">
-            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500"></i>
-            <input type="text" data-i18n-ph="search_placeholder" placeholder="Search prompts or media" 
-              class="w-full bg-[#0f0f12] border border-flowBorder rounded-full pl-9 pr-4 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500">
-          </div>
-        </div>
-
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <button onclick="toggleLanguage()" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white text-xs flex items-center space-x-1">
-            <i data-lucide="globe" class="w-3.5 h-3.5"></i>
-            <span class="lang-label font-mono font-bold">BN</span>
-          </button>
-
-          <div class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-[#18181b] text-zinc-300 text-[10px] font-semibold border border-zinc-800">
-            PRO STUDIO
-          </div>
-
-          <div class="relative group">
-            <div id="user-avatar" class="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-semibold text-xs flex items-center justify-center cursor-pointer border border-zinc-700 shadow">
-              U
-            </div>
-            <div class="absolute right-0 mt-2 w-48 bg-flowCard border border-flowBorder rounded-xl shadow-xl py-1 hidden group-hover:block z-50">
-              <div id="user-display-email" class="px-3 py-1.5 text-[11px] text-zinc-400 truncate border-b border-flowBorder">user@flow.ai</div>
-              <button id="logout-btn" class="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-flowHover flex items-center space-x-2">
-                <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-                <span data-i18n="btn_logout">Logout</span>
-              </button>
-            </div>
-          </div>
+      <header class="h-14 border-b border-flowBorder px-6 flex items-center justify-between">
+        <div class="text-xs text-zinc-400">Personal Google Pro Workspace</div>
+        <div class="px-2.5 py-1 rounded-md bg-[#18181b] text-zinc-300 text-[10px] font-semibold border border-zinc-800">
+          PRO ULTRA
         </div>
       </header>
 
-      <!-- VIEW 1: STUDIO CANVAS -->
-      <section id="view-canvas" class="flex-1 flex flex-col items-center justify-center relative overflow-y-auto p-4 sm:p-6">
-        
-        <!-- Empty State Graphic -->
-        <div id="dropzone" class="flex flex-col items-center justify-center space-y-4 text-center cursor-pointer border-2 border-dashed border-transparent hover:border-zinc-800 p-6 sm:p-8 rounded-3xl transition">
-          <input type="file" id="media-file-input" class="hidden" accept="image/*,video/*">
-          
-          <div class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-zinc-400 opacity-90">
-            <svg class="w-10 h-10 fill-current" viewBox="0 0 24 24">
-              <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2zm8-6a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2 2 2 0 0 1 2-2h2zm-14 0a2 2 0 0 1 2 2 2 2 0 0 1-2 2H4a2 2 0 0 1-2-2 2 2 0 0 1 2-2h2zm11.657-4.243a2 2 0 0 1 0 2.828l-1.414 1.415a2 2 0 0 1-2.829-2.829l1.415-1.414a2 2 0 0 1 2.828 0zm-11.314 11.314a2 2 0 0 1 0 2.829l-1.414 1.414a2 2 0 0 1-2.829-2.828l1.415-1.415a2 2 0 0 1 2.828 0zm11.314 0a2 2 0 0 1 2.828 0l1.415 1.415a2 2 0 0 1-2.829 2.828l-1.414-1.414a2 2 0 0 1 0-2.829zm-11.314-11.314a2 2 0 0 1 2.829 0l1.414 1.414a2 2 0 0 1-2.828 2.829l-1.415-1.415a2 2 0 0 1 0-2.828zM12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
-            </svg>
+      <!-- CANVAS -->
+      <section class="flex-1 flex flex-col items-center justify-center p-6 relative overflow-y-auto">
+        <div id="dropzone" class="flex flex-col items-center justify-center space-y-4 text-center">
+          <div class="w-14 h-14 flex items-center justify-center text-zinc-400 opacity-90">
+            <svg class="w-10 h-10 fill-current" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2zm8-6a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2 2 2 0 0 1 2-2h2zm-14 0a2 2 0 0 1 2 2 2 2 0 0 1-2 2H4a2 2 0 0 1-2-2 2 2 0 0 1 2-2h2zm11.657-4.243a2 2 0 0 1 0 2.828l-1.414 1.415a2 2 0 0 1-2.829-2.829l1.415-1.414a2 2 0 0 1 2.828 0zm-11.314 11.314a2 2 0 0 1 0 2.829l-1.414 1.414a2 2 0 0 1-2.829-2.828l1.415-1.415a2 2 0 0 1 2.828 0zm11.314 0a2 2 0 0 1 2.828 0l1.415 1.415a2 2 0 0 1-2.829 2.828l-1.414-1.414a2 2 0 0 1 0-2.829zm-11.314-11.314a2 2 0 0 1 2.829 0l1.414 1.414a2 2 0 0 1-2.828 2.829l-1.415-1.415a2 2 0 0 1 0-2.828zM12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
           </div>
-          <p data-i18n="empty_canvas_title" class="text-sm font-light text-zinc-300 tracking-wide">Start creating or drop media</p>
-          <p data-i18n="empty_canvas_subtitle" class="text-[11px] text-zinc-500">Click or drag image for image-to-video</p>
+          <p class="text-sm font-light text-zinc-300">Start creating or drop media</p>
         </div>
 
-        <div id="asset-pill" class="hidden items-center space-x-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-full mb-3">
-          <i data-lucide="image" class="w-3.5 h-3.5 text-blue-400"></i>
-          <span id="asset-name" class="text-xs text-zinc-300 max-w-xs truncate font-mono">image.png</span>
-          <button onclick="removeAttachedAsset()" class="text-zinc-500 hover:text-white ml-1">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-
-        <!-- ================= GOOGLE FLOW STYLE DYNAMIC PREVIEW CARD ================= -->
+        <!-- RESULT VIEW -->
         <div id="result-view" class="hidden w-full max-w-2xl flex flex-col items-center space-y-4">
-          <div id="output-box" class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex flex-col items-center justify-center shadow-2xl p-3 sm:p-5 transition-all duration-500">
-            
-            <!-- Scan Beam Effect during Rendering -->
-            <div id="scan-effect" class="scan-beam hidden"></div>
-
-            <!-- Video Player -->
+          <div id="output-box" class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex flex-col items-center justify-center p-4">
             <video id="output-video" controls autoplay loop playsinline class="w-full h-full object-contain hidden rounded-xl"></video>
-            
-            <!-- Google Flow Glowing Shimmer Loading State -->
-            <div id="loading-spinner" class="hidden flex flex-col items-center space-y-4 text-center px-4 relative z-10">
-              
-              <!-- Pulsing Center Orb -->
-              <div class="relative flex items-center justify-center">
-                <div class="w-14 h-14 rounded-full bg-blue-600/10 border border-blue-500/30 animate-ping absolute"></div>
-                <div class="w-12 h-12 rounded-full bg-zinc-900 border border-blue-500/50 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <i data-lucide="sparkles" class="w-5 h-5 text-blue-400 animate-pulse"></i>
-                </div>
-              </div>
 
-              <!-- Blinking Status Badge -->
-              <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-[11px] text-zinc-300 shadow-sm">
+            <div id="loading-spinner" class="hidden flex flex-col items-center space-y-4 text-center px-4">
+              <div class="w-12 h-12 rounded-full bg-zinc-900 border border-blue-500/50 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <i data-lucide="sparkles" class="w-5 h-5 text-blue-400 animate-pulse"></i>
+              </div>
+              <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300">
                 <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                <span id="router-feedback-status" class="font-mono">Initializing creative pipeline...</span>
-              </div>
-
-              <div class="text-[11px] text-zinc-500 font-sans tracking-wide max-w-sm">
-                Synthesizing cinematic temporal motion vectors across neural clusters.
+                <span id="router-feedback-status" class="font-mono">Assigning task to Google worker...</span>
               </div>
             </div>
-
-            <!-- Graceful Dynamic Failure Card (Zero Info Leaked) -->
-            <div id="error-fallback-card" class="hidden flex flex-col items-center justify-center space-y-3 p-6 text-center max-w-md">
-              <div class="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-1">
-                <i data-lucide="cloud-off" class="w-5 h-5"></i>
-              </div>
-              <h3 class="text-sm font-medium text-white tracking-wide">Cluster Congestion</h3>
-              <p id="error-fallback-message" class="text-xs text-zinc-400 leading-relaxed font-sans">
-                Generative GPU pipeline is temporarily occupied with high task traffic. Please retry in a few moments.
-              </p>
-              <button onclick="resetCanvasState()" 
-                class="mt-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700 flex items-center space-x-1.5 transition">
-                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                <span>Try Again</span>
-              </button>
-            </div>
-
           </div>
-          
+
           <div class="flex items-center justify-between w-full px-2">
             <div id="output-prompt-text" class="text-xs text-zinc-400 italic max-w-md truncate"></div>
-            <a id="download-btn" href="#" target="_blank" download="generated-video.mp4" 
-              class="hidden px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-xs text-black font-semibold items-center space-x-1.5 transition shadow">
+            <a id="download-btn" href="#" target="_blank" download="google-flow-video.mp4" 
+              class="hidden px-3.5 py-1.5 rounded-xl bg-white text-xs text-black font-semibold items-center space-x-1.5 transition">
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
-              <span data-i18n="btn_download">Download</span>
+              <span>Download Video</span>
             </a>
           </div>
         </div>
       </section>
 
-      <!-- VIEW 2: ALL MEDIA (HISTORY) -->
-      <section id="view-gallery" class="hidden flex-1 overflow-y-auto p-4 sm:p-8">
-        <div class="max-w-5xl mx-auto space-y-4">
-          <div class="flex items-center justify-between border-b border-flowBorder pb-3">
-            <h2 data-i18n="gallery_title" class="text-sm font-semibold text-white">All Media History</h2>
-            <span id="gallery-count" class="text-xs text-zinc-500 font-mono">0 items</span>
-          </div>
-          <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
-        </div>
-      </section>
+      <!-- PROMPT BAR -->
+      <footer class="w-full flex flex-col items-center pb-4 px-6 z-20">
+        <div class="w-full max-w-2xl bg-[#141417] border border-flowBorder rounded-2xl p-2.5 shadow-2xl flex flex-col space-y-2">
+          <textarea id="prompt-input" rows="1" placeholder="What do you want to create?"
+            class="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none resize-none leading-relaxed overflow-hidden px-2"></textarea>
 
-      <!-- FLOATING PROMPT BAR -->
-      <footer class="w-full flex flex-col items-center pb-4 px-3 sm:px-6 z-20">
-        <div class="w-full max-w-2xl bg-[#141417] border border-flowBorder rounded-2xl p-2.5 shadow-2xl flex flex-col space-y-2 relative">
-          
-          <div class="w-full px-2">
-            <textarea id="prompt-input" rows="1" data-i18n-ph="prompt_placeholder" placeholder="What do you want to create?"
-              class="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none resize-none leading-relaxed overflow-hidden"></textarea>
-          </div>
-
-          <div class="flex items-center justify-between pt-1 gap-2 flex-wrap sm:flex-nowrap">
-            <div class="flex items-center space-x-2">
-              <button onclick="triggerAssetUpload()" class="p-1.5 text-zinc-400 hover:text-white hover:bg-flowHover rounded-lg transition" title="Add Assets">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-              </button>
-
-              <!-- Dynamic Model Selector (Strictly from Admin Panel) -->
-              <div class="relative">
-                <select id="model-select" class="appearance-none bg-[#1f1f23] hover:bg-[#27272c] text-zinc-200 text-xs rounded-xl px-3 py-1.5 pr-7 border border-zinc-800 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[200px] truncate">
-                  <option value="" disabled selected>Loading models...</option>
-                </select>
-                <i data-lucide="chevron-down" class="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"></i>
-              </div>
-
-              <!-- SPECS BUTTON & CLICK-TOGGLE POPOVER -->
-              <div class="relative">
-                <button type="button" id="specs-trigger-btn" onclick="toggleSpecsPopover(event)"
-                  class="px-2.5 py-1.5 rounded-xl bg-[#1f1f23] hover:bg-[#27272c] text-zinc-300 text-[11px] border border-zinc-800 flex items-center space-x-1 cursor-pointer transition">
-                  <span id="specs-display" class="truncate max-w-[110px] sm:max-w-none">Video · 16:9 · 720p · 8s</span>
-                  <i data-lucide="sliders" class="w-3 h-3 text-zinc-400 ml-1"></i>
-                </button>
-
-                <div id="specs-popover" onclick="event.stopPropagation()"
-                  class="hidden absolute bottom-full mb-3 left-0 sm:left-auto w-64 bg-[#18181c] border border-flowBorder rounded-2xl shadow-2xl p-4 z-50 space-y-3.5">
-                  
-                  <div class="flex items-center justify-between pb-1.5 border-b border-zinc-800">
-                    <span data-i18n="specs_heading" class="text-xs font-semibold text-white">Video Parameters</span>
-                    <button type="button" onclick="closeSpecsPopover()" class="text-zinc-500 hover:text-white">
-                      <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                    </button>
-                  </div>
-
-                  <div>
-                    <label data-i18n="specs_ratio" class="block text-[11px] text-zinc-400 mb-1">Aspect Ratio</label>
-                    <select id="ratio-select" onchange="updateSpecsLabel()" class="w-full bg-[#101013] border border-zinc-800 rounded-lg p-1.5 text-xs text-white focus:outline-none">
-                      <option value="16:9">16:9 Landscape</option>
-                      <option value="9:16">9:16 Portrait (Reels)</option>
-                      <option value="1:1">1:1 Square</option>
-                    </select>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-2">
-                    <div>
-                      <label data-i18n="specs_res" class="block text-[11px] text-zinc-400 mb-1">Resolution</label>
-                      <select id="res-select" onchange="updateSpecsLabel()" class="w-full bg-[#101013] border border-zinc-800 rounded-lg p-1.5 text-xs text-white focus:outline-none">
-                        <option value="720p">720p HD</option>
-                        <option value="1080p">1080p FHD</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label data-i18n="specs_dur" class="block text-[11px] text-zinc-400 mb-1">Duration</label>
-                      <select id="dur-select" onchange="updateSpecsLabel()" class="w-full bg-[#101013] border border-zinc-800 rounded-lg p-1.5 text-xs text-white focus:outline-none">
-                        <option value="5s">5s</option>
-                        <option value="8s" selected>8s</option>
-                        <option value="10s">10s</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <button type="button" onclick="closeSpecsPopover()" 
-                    class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-medium transition">
-                    <span data-i18n="btn_apply">Done</span>
-                  </button>
-                </div>
-              </div>
+          <div class="flex items-center justify-between pt-1">
+            <div class="relative">
+              <select id="model-select" class="appearance-none bg-[#1f1f23] text-zinc-200 text-xs rounded-xl px-3 py-1.5 pr-7 border border-zinc-800 focus:outline-none cursor-pointer">
+                <option value="google/flow-video">Google Flow Video (Veo)</option>
+              </select>
+              <i data-lucide="chevron-down" class="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"></i>
             </div>
 
             <button id="generate-btn" class="w-8 h-8 rounded-full bg-white text-black hover:bg-zinc-200 transition flex items-center justify-center shrink-0">
@@ -398,16 +169,11 @@
             </button>
           </div>
         </div>
-
-        <span id="site-disclaimer" class="text-[10px] text-zinc-600 mt-2 text-center">Google Flow can make mistakes, so double check it</span>
       </footer>
-
     </main>
   </div>
 
-  <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    // 1. FIREBASE CONFIGURATION
     const firebaseConfig = {
       apiKey: "AIzaSyDdtiWw6gzYFqSyuq2-ufFzmJ1PZyL2bCE",
       authDomain: "flow-studio-a283b.firebaseapp.com",
@@ -418,633 +184,112 @@
       measurementId: "G-CT21P2M6XY"
     };
 
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 2. INTERNATIONALIZATION (EN / BN)
-    const translations = {
-      en: {
-        login_subtitle: "Login with your assigned credentials",
-        email_label: "Gmail / Email",
-        password_label: "Password",
-        btn_login: "Sign In",
-        login_footer_note: "Contact administrator to get an account or assign API keys.",
-        nav_studio: "Studio Canvas",
-        nav_all_media: "All media",
-        nav_characters: "Characters",
-        nav_scenes: "Scenes",
-        nav_clear_history: "Clear History",
-        nav_collapse: "Collapse",
-        search_placeholder: "Search prompts or media",
-        btn_logout: "Logout",
-        empty_canvas_title: "Start creating or drop media",
-        empty_canvas_subtitle: "Click or drag image for image-to-video",
-        prompt_placeholder: "What do you want to create?",
-        specs_heading: "Video Parameters",
-        specs_ratio: "Aspect Ratio",
-        specs_res: "Resolution",
-        specs_dur: "Duration",
-        btn_apply: "Done",
-        btn_download: "Download",
-        gallery_title: "All Media History"
-      },
-      bn: {
-        login_subtitle: "আপনার জন্য নির্ধারিত তথ্য দিয়ে লগইন করুন",
-        email_label: "জিমেইল / ইমেইল",
-        password_label: "পাসওয়ার্ড",
-        btn_login: "লগইন করুন",
-        login_footer_note: "অ্যাকাউন্ট তৈরি জন্য অ্যাডমিনের সাথে যোগাযোগ করুন।",
-        nav_studio: "স্টুডিও ক্যানভাস",
-        nav_all_media: "অল মিডিয়া",
-        nav_characters: "ক্যারেক্টার",
-        nav_scenes: "সিন্স",
-        nav_clear_history: "হিস্ট্রি মুছুন",
-        nav_collapse: "কলাপ্স",
-        search_placeholder: "প্রম্পট বা মিডিয়া খুঁজুন",
-        btn_logout: "লগআউট",
-        empty_canvas_title: "নতুন কিছু তৈরি করতে প্রম্পট লিখুন",
-        empty_canvas_subtitle: "ছবি থেকে ভিডিও বানাতে ছবি ড্রপ করুন",
-        prompt_placeholder: "আপনি কী তৈরি করতে চান?",
-        specs_heading: "ভিডিও কনফিগারেশন",
-        specs_ratio: "অ্যাসপেক্ট রেশিও",
-        specs_res: "রেজোলিউশন",
-        specs_dur: "সময়কাল (Duration)",
-        btn_apply: "প্রয়োগ করুন",
-        btn_download: "ডাউনলোড",
-        gallery_title: "পূর্বের তৈরি সব মিডিয়া"
-      }
-    };
+    function renderIcons() { if (window.lucide) lucide.createIcons(); }
 
-    let currentLang = localStorage.getItem('flow_lang') || 'en';
-
-    function setLanguage(lang) {
-      currentLang = lang;
-      localStorage.setItem('flow_lang', lang);
-      document.querySelectorAll('.lang-label').forEach(el => el.textContent = lang === 'en' ? 'BN' : 'EN');
-
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[lang][key]) el.textContent = translations[lang][key];
-      });
-
-      document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-        const key = el.getAttribute('data-i18n-ph');
-        if (translations[lang][key]) el.placeholder = translations[lang][key];
-      });
-    }
-
-    function toggleLanguage() {
-      setLanguage(currentLang === 'en' ? 'bn' : 'en');
-    }
-
-    function renderIcons() {
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function togglePasswordVisibility(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon = document.getElementById(iconId);
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.setAttribute('data-lucide', 'eye-off');
-      } else {
-        input.type = 'password';
-        icon.setAttribute('data-lucide', 'eye');
-      }
-      renderIcons();
-    }
-
-    // 3. SPECS POPOVER
-    const specsPopover = document.getElementById('specs-popover');
-    function toggleSpecsPopover(e) {
-      if (e) e.stopPropagation();
-      specsPopover.classList.toggle('hidden');
-    }
-
-    function closeSpecsPopover() {
-      specsPopover.classList.add('hidden');
-    }
-
-    document.addEventListener('click', (e) => {
-      const trigger = document.getElementById('specs-trigger-btn');
-      if (!specsPopover.contains(e.target) && !trigger.contains(e.target)) {
-        specsPopover.classList.add('hidden');
-      }
-    });
-
-    function updateSpecsLabel() {
-      const r = document.getElementById('ratio-select').value;
-      const q = document.getElementById('res-select').value;
-      const d = document.getElementById('dur-select').value;
-      document.getElementById('specs-display').textContent = `Video · ${r} · ${q} · ${d}`;
-    }
-
-    // 4. MOBILE DRAWER
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('mobile-backdrop');
-    function toggleMobileSidebar() {
-      sidebar.classList.toggle('-translate-x-full');
-      backdrop.classList.toggle('hidden');
-    }
-    backdrop.addEventListener('click', toggleMobileSidebar);
-
-    // 5. FIRESTORE REAL-TIME SYNC
-    function listenToSiteConfig() {
-      db.collection('settings').doc('site_config').onSnapshot((doc) => {
-        if (doc.exists) {
-          const cfg = doc.data();
-          if (cfg.siteName) {
-            document.getElementById('page-title').textContent = cfg.siteName;
-            document.getElementById('login-site-name').textContent = cfg.siteName;
-            document.getElementById('app-site-name').textContent = cfg.siteName;
-          }
-          if (cfg.disclaimer) {
-            document.getElementById('site-disclaimer').textContent = cfg.disclaimer;
-          }
-          if (cfg.logoUrl) {
-            const logo = `<img src="${cfg.logoUrl}" class="w-full h-full object-contain rounded" alt="Logo">`;
-            document.getElementById('login-logo-box').innerHTML = logo;
-            document.getElementById('app-logo-box').innerHTML = logo;
-          }
-        }
-      }, err => console.warn(err));
-    }
-
-    function listenToActiveModels() {
-      db.collection('models').onSnapshot((snapshot) => {
-        const sel = document.getElementById('model-select');
-        sel.innerHTML = '';
-        
-        let count = 0;
-        snapshot.forEach((doc) => {
-          const m = doc.data();
-          if (m.active !== false && m.id) {
-            const opt = document.createElement('option');
-            opt.value = m.id.trim();
-            opt.textContent = m.name || m.id;
-            if (count === 0) opt.selected = true;
-            sel.appendChild(opt);
-            count++;
-          }
-        });
-
-        if (count === 0) {
-          const opt = document.createElement('option');
-          opt.value = "";
-          opt.textContent = "No active models in Admin";
-          sel.appendChild(opt);
-        }
-      }, err => console.error("Firestore models listener error:", err));
-    }
-
-    listenToSiteConfig();
-    listenToActiveModels();
-
-    // 6. CLIENT AUTHENTICATION WITH SESSION PERSISTENCE
     let currentSessionUser = null;
-    let attachedAsset = null;
 
-    const loginForm = document.getElementById('login-form');
-    const loginError = document.getElementById('login-error');
-    const authScreen = document.getElementById('auth-screen');
-    const mainApp = document.getElementById('main-app');
-
-    async function checkSavedSession() {
-      const savedUserId = localStorage.getItem('flow_active_uid');
-      if (savedUserId) {
-        try {
-          const doc = await db.collection('users').doc(savedUserId).get();
-          if (doc.exists && doc.data().active !== false) {
-            startUserSession({ id: doc.id, ...doc.data() });
-          } else {
-            localStorage.removeItem('flow_active_uid');
-          }
-        } catch (e) {
-          console.error("Session restoration error:", e);
-        }
-      }
-    }
-
-    function startUserSession(userData) {
-      currentSessionUser = userData;
-      localStorage.setItem('flow_active_uid', userData.id);
-
-      authScreen.classList.add('hidden');
-      mainApp.classList.remove('hidden');
-
-      document.getElementById('user-display-email').textContent = userData.email;
-      document.getElementById('user-avatar').textContent = (userData.email || 'U').charAt(0).toUpperCase();
-
-      listenToUserGenerations();
-      renderIcons();
-    }
-
-    loginForm.addEventListener('submit', async (e) => {
+    // Login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      loginError.classList.add('hidden');
       const email = document.getElementById('login-email').value.trim().toLowerCase();
-      const password = document.getElementById('login-password').value;
+      const pass = document.getElementById('login-password').value;
 
-      try {
-        const querySnap = await db.collection('users').where('email', '==', email).get();
-        if (querySnap.empty) {
-          loginError.textContent = currentLang === 'en' ? "Account not found. Contact administrator." : "অ্যাকাউন্ট পাওয়া যায়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।";
-          loginError.classList.remove('hidden');
-          return;
-        }
+      const snap = await db.collection('users').where('email', '==', email).get();
+      if (snap.empty) return alert("Account not found!");
 
-        let userFound = null;
-        querySnap.forEach(doc => { userFound = { id: doc.id, ...doc.data() }; });
+      let user = null;
+      snap.forEach(d => user = { id: d.id, ...d.data() });
 
-        if (userFound.password !== password) {
-          loginError.textContent = currentLang === 'en' ? "Incorrect password provided." : "ভুল পাসওয়ার্ড দেওয়া হয়েছে।";
-          loginError.classList.remove('hidden');
-          return;
-        }
+      if (user.password !== pass) return alert("Incorrect password!");
 
-        if (userFound.active === false) {
-          loginError.textContent = currentLang === 'en' ? "Your account is currently suspended." : "আপনার অ্যাকাউন্টটি সাময়িক স্থগিত রয়েছে।";
-          loginError.classList.remove('hidden');
-          return;
-        }
-
-        startUserSession(userFound);
-
-      } catch (err) {
-        console.error(err);
-        loginError.textContent = "Firebase error: " + err.message;
-        loginError.classList.remove('hidden');
-      }
+      currentSessionUser = user;
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      document.getElementById('user-display-email').textContent = user.email;
+      renderIcons();
     });
 
     document.getElementById('logout-btn').addEventListener('click', () => {
-      localStorage.removeItem('flow_active_uid');
       currentSessionUser = null;
-      mainApp.classList.add('hidden');
-      authScreen.classList.remove('hidden');
+      document.getElementById('main-app').classList.add('hidden');
+      document.getElementById('auth-screen').classList.remove('hidden');
     });
 
-    // 7. FILE ATTACHMENT
-    const fileInput = document.getElementById('media-file-input');
-    document.getElementById('dropzone').addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      attachedAsset = file.name;
-      document.getElementById('asset-name').textContent = file.name;
-      document.getElementById('asset-pill').classList.remove('hidden');
-      document.getElementById('asset-pill').classList.add('flex');
-      renderIcons();
-    });
-
-    function triggerAssetUpload() { fileInput.click(); }
-    function removeAttachedAsset() {
-      attachedAsset = null;
-      fileInput.value = '';
-      document.getElementById('asset-pill').classList.add('hidden');
-      document.getElementById('asset-pill').classList.remove('flex');
-    }
-
-    function resetCanvasState() {
-      document.getElementById('result-view').classList.add('hidden');
-      document.getElementById('dropzone').classList.remove('hidden');
-      document.getElementById('output-box').classList.remove('flow-glow-active');
-      document.getElementById('scan-effect').classList.add('hidden');
-      document.getElementById('loading-spinner').classList.add('hidden');
-      document.getElementById('error-fallback-card').classList.add('hidden');
-      generateBtn.disabled = false;
-    }
-
-    // ================= 8. GOOGLE FLOW STYLE BLINKING & SECURE GENERATION ENGINE =================
+    // Generate Task Submission
     const generateBtn = document.getElementById('generate-btn');
     const promptInput = document.getElementById('prompt-input');
+    const dropzone = document.getElementById('dropzone');
     const resultView = document.getElementById('result-view');
-    const emptyDropzone = document.getElementById('dropzone');
+    const outputBox = document.getElementById('output-box');
     const loadingSpinner = document.getElementById('loading-spinner');
     const outputVideo = document.getElementById('output-video');
     const downloadBtn = document.getElementById('download-btn');
-    const outputPromptText = document.getElementById('output-prompt-text');
-    const routerFeedbackStatus = document.getElementById('router-feedback-status');
-    const outputBox = document.getElementById('output-box');
-    const scanEffect = document.getElementById('scan-effect');
-    const errorFallbackCard = document.getElementById('error-fallback-card');
-
-    let stageInterval = null;
+    const statusText = document.getElementById('router-feedback-status');
 
     generateBtn.addEventListener('click', async () => {
       const prompt = promptInput.value.trim();
-      const selectedModelId = (document.getElementById('model-select').value || '').trim();
-      
-      if (!prompt) {
-        alert(currentLang === 'en' ? "Please enter a prompt first!" : "অনুগ্রহ করে একটি প্রম্পট লিখুন!");
-        return;
-      }
+      if (!prompt) return alert("Please enter a prompt!");
 
-      if (!selectedModelId) {
-        alert("No AI model selected or available.");
-        return;
-      }
-
-      if (!currentSessionUser || !currentSessionUser.apiKey) {
-        alert("Account configuration missing. Contact administrator.");
-        return;
-      }
-
-      // UI Initializing (Activate Google Flow Glow & Scanline)
-      emptyDropzone.classList.add('hidden');
+      dropzone.classList.add('hidden');
       resultView.classList.remove('hidden');
       loadingSpinner.classList.remove('hidden');
-      errorFallbackCard.classList.add('hidden');
       outputVideo.classList.add('hidden');
       downloadBtn.classList.add('hidden');
       outputBox.classList.add('flow-glow-active');
-      scanEffect.classList.remove('hidden');
-      
-      const oldTextContainer = document.getElementById('ai-text-response');
-      if (oldTextContainer) oldTextContainer.remove();
-
-      outputPromptText.textContent = `"${prompt}"`;
+      document.getElementById('output-prompt-text').textContent = `"${prompt}"`;
       generateBtn.disabled = true;
 
-      // Realistic Dynamic Step Cycling (Google Flow Style)
-      const flowStages = [
-        "Analyzing cinematic prompt semantics...",
-        "Allocating high-density neural tensors...",
-        "Synthesizing temporal latent motion...",
-        "Rendering coherent video frames...",
-        "Finalizing high-definition stream..."
-      ];
-      let stageIndex = 0;
-      routerFeedbackStatus.textContent = flowStages[0];
-
-      if (stageInterval) clearInterval(stageInterval);
-      stageInterval = setInterval(() => {
-        stageIndex = (stageIndex + 1) % flowStages.length;
-        routerFeedbackStatus.textContent = flowStages[stageIndex];
-      }, 4000);
-
-      const baseUrl = (currentSessionUser.baseUrl || '').trim().replace(/\/+$/, '');
-      const apiKey = (currentSessionUser.apiKey || '').trim();
-      const provider = (currentSessionUser.provider || '').toLowerCase();
-
-      const isQueueProvider = provider.includes('fal') || 
-                             baseUrl.includes('fal.run') || 
-                             baseUrl.includes('fal.ai') ||
-                             apiKey.includes(':');
+      statusText.textContent = "Queueing task to your dedicated Google account...";
 
       try {
-        if (isQueueProvider) {
-          // ================= QUEUE BASED PIPELINE (FAL.AI) =================
-          const falBase = baseUrl || 'https://queue.fal.run';
-          const cleanModelSlug = selectedModelId.replace(/^\/+/, '');
-          const submitUrl = `${falBase}/${cleanModelSlug}`;
-          const authHeader = apiKey.startsWith('Key ') || apiKey.startsWith('Bearer ') ? apiKey : `Key ${apiKey}`;
-
-          // Step 1: Submit Prompt
-          const submitRes = await fetch(submitUrl, {
-            method: "POST",
-            headers: {
-              "Authorization": authHeader,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ prompt: prompt })
-          });
-
-          // Check if response is not OK (e.g. 402 Insufficient Balance, 404, 500)
-          if (!submitRes.ok) {
-            // Throw generic error to trigger masked Google Flow failure state
-            throw new Error("QUEUE_REJECTED");
-          }
-
-          const submitData = await submitRes.json();
-          const requestId = submitData.request_id;
-          const statusUrl = submitData.status_url || `${falBase}/${cleanModelSlug}/requests/${requestId}/status`;
-          const responseUrl = submitData.response_url || `${falBase}/${cleanModelSlug}/requests/${requestId}`;
-
-          // Step 2: Live Polling Loop
-          let status = submitData.status || "IN_QUEUE";
-          let attempts = 0;
-          const maxAttempts = 75;
-
-          while (status !== "COMPLETED" && status !== "OK" && attempts < maxAttempts) {
-            await new Promise(r => setTimeout(r, 3000));
-            attempts++;
-
-            const checkRes = await fetch(statusUrl, {
-              headers: { "Authorization": authHeader }
-            });
-
-            if (!checkRes.ok) {
-              throw new Error("STATUS_POLL_FAILED");
-            }
-
-            const checkData = await checkRes.json();
-            status = checkData.status;
-
-            if (status === "FAILED") {
-              throw new Error("GENERATION_FAILED");
-            }
-          }
-
-          if (status !== "COMPLETED" && status !== "OK") {
-            throw new Error("TIMEOUT");
-          }
-
-          // Step 3: Fetch Completed Output
-          const finalRes = await fetch(responseUrl, {
-            headers: { "Authorization": authHeader }
-          });
-
-          if (!finalRes.ok) {
-            throw new Error("FETCH_OUTPUT_FAILED");
-          }
-
-          const finalData = await finalRes.json();
-          const videoUrl = finalData.video?.url || finalData.video_url || finalData.output?.url || (Array.isArray(finalData.images) && finalData.images[0]?.url);
-
-          if (!videoUrl) {
-            throw new Error("NO_VIDEO_URL");
-          }
-
-          // Video Completed Successfully
-          clearInterval(stageInterval);
-          outputBox.classList.remove('flow-glow-active');
-          scanEffect.classList.add('hidden');
-          loadingSpinner.classList.add('hidden');
-          
-          outputVideo.src = videoUrl;
-          outputVideo.classList.remove('hidden');
-          outputVideo.play();
-
-          downloadBtn.href = videoUrl;
-          downloadBtn.classList.remove('hidden');
-          downloadBtn.classList.add('flex');
-          generateBtn.disabled = false;
-
-          saveGenerationHistory(prompt, selectedModelId, videoUrl, null);
-          return;
-        }
-
-        // ================= OPENROUTER / CHAT LLM PIPELINE =================
-        const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl || 'https://openrouter.ai/api/v1'}/chat/completions`;
-
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "HTTP-Referer": window.location.origin || "http://localhost",
-            "X-Title": "Google Flow Studio",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: selectedModelId,
-            messages: [
-              {
-                role: "system",
-                content: "You are a professional AI Video Director. Provide a vivid cinematic shot script, camera movements, and scene breakdown for this video prompt."
-              },
-              { role: "user", content: prompt }
-            ]
-          })
+        // Create Automation Task in Firestore
+        const taskRef = await db.collection('video_tasks').add({
+          userId: currentSessionUser.id,
+          userEmail: currentSessionUser.email,
+          prompt: prompt,
+          model: document.getElementById('model-select').value,
+          status: 'pending',
+          stage: 'Queued for Worker...',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        if (!response.ok) {
-          throw new Error("LLM_REJECTED");
-        }
+        // Real-time listener for this specific task
+        const unsubscribe = taskRef.onSnapshot((doc) => {
+          const task = doc.data();
+          if (!task) return;
 
-        const data = await response.json();
-        clearInterval(stageInterval);
-        outputBox.classList.remove('flow-glow-active');
-        scanEffect.classList.add('hidden');
-        loadingSpinner.classList.add('hidden');
-        generateBtn.disabled = false;
+          if (task.status === 'processing') {
+            statusText.textContent = task.stage || "Rendering video via Google Flow...";
+          } else if (task.status === 'completed' && task.videoUrl) {
+            outputBox.classList.remove('flow-glow-active');
+            loadingSpinner.classList.add('hidden');
+            outputVideo.src = task.videoUrl;
+            outputVideo.classList.remove('hidden');
+            outputVideo.play();
 
-        const aiResponseContent = data.choices && data.choices[0]?.message?.content 
-          ? data.choices[0].message.content 
-          : "Generation completed!";
-
-        const textCard = document.createElement('div');
-        textCard.id = "ai-text-response";
-        textCard.className = "w-full max-h-72 overflow-y-auto p-4 text-xs text-zinc-300 leading-relaxed font-sans bg-black/60 rounded-xl border border-zinc-800 text-left whitespace-pre-wrap select-text";
-        textCard.innerHTML = `<span class="text-blue-400 font-semibold mb-2 block flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Flow AI Director Breakdown:</span>${aiResponseContent}`;
-        
-        outputBox.appendChild(textCard);
-        renderIcons();
-
-        saveGenerationHistory(prompt, selectedModelId, null, aiResponseContent.substring(0, 300));
+            downloadBtn.href = task.videoUrl;
+            downloadBtn.classList.remove('hidden');
+            downloadBtn.classList.add('flex');
+            generateBtn.disabled = false;
+            unsubscribe();
+          } else if (task.status === 'failed') {
+            outputBox.classList.remove('flow-glow-active');
+            loadingSpinner.classList.add('hidden');
+            alert(task.error || "Generation interrupted. Please try again.");
+            generateBtn.disabled = false;
+            unsubscribe();
+          }
+        });
 
       } catch (err) {
-        // ================= SECURE MASKED GOOGLE FLOW FAILURE STATE =================
-        console.warn("Generation pipeline interruption handled.");
-        clearInterval(stageInterval);
-
-        // Turn off loading glow and scanline
-        outputBox.classList.remove('flow-glow-active');
-        scanEffect.classList.add('hidden');
-        loadingSpinner.classList.add('hidden');
+        alert("Failed to submit task: " + err.message);
         generateBtn.disabled = false;
-
-        // Render sleek masked failure card (Zero mentions of balance, payment, or admin settings)
-        errorFallbackCard.classList.remove('hidden');
-        document.getElementById('error-fallback-message').textContent = currentLang === 'en'
-          ? "Generative cluster is temporarily congested under peak task load. Please try again in a few moments."
-          : "জেনারেটিভ জিপিইউ ক্লাস্টারে অত্যাধিক ট্রাফিকের কারণে রিকোয়েস্ট সম্পন্ন করা যায়নি। কিছুক্ষণ পর পুনরায় চেষ্টা করুন।";
-
-        renderIcons();
       }
     });
 
-    function saveGenerationHistory(prompt, model, videoUrl, responseText) {
-      const newGen = {
-        userEmail: currentSessionUser.email,
-        prompt: prompt,
-        model: model,
-        videoUrl: videoUrl || null,
-        response: responseText || null,
-        specs: document.getElementById('specs-display').textContent,
-        createdAt: new Date().toLocaleTimeString(),
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      db.collection('generations').add(newGen).catch(e => console.warn(e));
-    }
-
-    // 9. REAL-TIME GALLERY FOR USER
-    function listenToUserGenerations() {
-      if (!currentSessionUser) return;
-      db.collection('generations')
-        .where('userEmail', '==', currentSessionUser.email)
-        .onSnapshot((snapshot) => {
-          const grid = document.getElementById('gallery-grid');
-          document.getElementById('gallery-count').textContent = `${snapshot.size} items`;
-          grid.innerHTML = '';
-
-          if (snapshot.empty) {
-            grid.innerHTML = `<div class="col-span-full text-center py-12 text-xs text-zinc-500">No media generated yet.</div>`;
-            return;
-          }
-
-          snapshot.forEach((doc) => {
-            const item = doc.data();
-            const card = document.createElement('div');
-            card.className = "bg-flowCard border border-flowBorder rounded-xl overflow-hidden p-3 space-y-2";
-            card.innerHTML = `
-              ${item.videoUrl ? `
-                <div class="aspect-video bg-black rounded-lg overflow-hidden">
-                  <video src="${item.videoUrl}" controls class="w-full h-full object-cover"></video>
-                </div>
-              ` : `
-                <div class="p-2.5 bg-black/60 rounded-lg text-xs text-zinc-300 max-h-32 overflow-y-auto">
-                  <span class="text-blue-400 font-semibold text-[10px] block mb-1">PROMPT: "${item.prompt}"</span>
-                  <p class="text-[11px] text-zinc-400 whitespace-pre-wrap">${item.response || 'Completed'}</p>
-                </div>
-              `}
-              <div class="px-1 flex items-center justify-between text-[10px] text-zinc-500 mt-1">
-                <span>${item.model}</span>
-                <span>${item.createdAt || ''}</span>
-              </div>
-            `;
-            grid.appendChild(card);
-          });
-        });
-    }
-
-    function switchView(view) {
-      const cvs = document.getElementById('view-canvas');
-      const gal = document.getElementById('view-gallery');
-      const bC = document.getElementById('nav-btn-canvas');
-      const bG = document.getElementById('nav-btn-gallery');
-
-      if (view === 'canvas') {
-        cvs.classList.remove('hidden');
-        gal.classList.add('hidden');
-        bC.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl bg-flowActive text-white text-xs font-medium transition";
-        bG.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition";
-      } else {
-        cvs.classList.add('hidden');
-        gal.classList.remove('hidden');
-        bG.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl bg-flowActive text-white text-xs font-medium transition";
-        bC.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition";
-      }
-      if (window.innerWidth < 768) toggleMobileSidebar();
-      renderIcons();
-    }
-
-    async function clearMyHistory() {
-      if (confirm(currentLang === 'en' ? "Clear all your generated history?" : "আপনার তৈরি করা সকল হিস্ট্রি মুছে ফেলবেন?")) {
-        const snap = await db.collection('generations').where('userEmail', '==', currentSessionUser.email).get();
-        snap.forEach(d => d.ref.delete());
-      }
-    }
-
-    promptInput.addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = (this.scrollHeight) + 'px';
-    });
-
-    setLanguage(currentLang);
-    checkSavedSession();
     renderIcons();
   </script>
 </body>
