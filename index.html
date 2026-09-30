@@ -28,9 +28,8 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Firebase Compat SDK -->
+  <!-- Firebase Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <style>
@@ -66,19 +65,19 @@
       <form id="login-form" class="w-full space-y-4">
         <div>
           <label data-i18n="email_label" class="block text-xs font-medium text-zinc-400 mb-1">Gmail / Email</label>
-          <input type="email" id="login-email" value="demo@gmail.com" required
+          <input type="email" id="login-email" required placeholder="client@gmail.com"
             class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors">
         </div>
 
         <div>
           <label data-i18n="password_label" class="block text-xs font-medium text-zinc-400 mb-1">Password</label>
-          <input type="password" id="login-password" value="123456" required
+          <input type="password" id="login-password" required placeholder="••••••••"
             class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors">
         </div>
 
         <div id="login-error" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-900/50 p-2.5 rounded-lg text-center"></div>
 
-        <button type="submit"
+        <button type="submit" id="btn-login-submit"
           class="w-full py-2.5 bg-white text-black font-semibold text-sm rounded-xl hover:bg-zinc-200 transition-all flex items-center justify-center space-x-2">
           <span data-i18n="btn_login">Sign In</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
@@ -109,7 +108,6 @@
             </div>
             <span id="app-site-name" class="text-xs font-medium text-white truncate max-w-[120px]">Google Flow</span>
           </div>
-          <!-- Mobile Close Button -->
           <button onclick="toggleMobileSidebar()" class="md:hidden text-zinc-400 hover:text-white">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
@@ -156,8 +154,6 @@
       
       <!-- TOP NAVIGATION BAR -->
       <header class="h-14 border-b border-flowBorder px-4 sm:px-6 flex items-center justify-between gap-2">
-        
-        <!-- Mobile Hamburger & Search -->
         <div class="flex items-center space-x-2 flex-1 max-w-md">
           <button onclick="toggleMobileSidebar()" class="md:hidden p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900">
             <i data-lucide="menu" class="w-4 h-4"></i>
@@ -169,10 +165,7 @@
           </div>
         </div>
 
-        <!-- Right Side Header Controls -->
         <div class="flex items-center space-x-2 sm:space-x-3">
-          
-          <!-- Language Toggle -->
           <button onclick="toggleLanguage()" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white text-xs flex items-center space-x-1">
             <i data-lucide="globe" class="w-3 h-3"></i>
             <span class="lang-label font-mono font-bold">BN</span>
@@ -182,7 +175,6 @@
             PRO STUDIO
           </div>
 
-          <!-- User Profile & Logout -->
           <div class="relative group">
             <div id="user-avatar" class="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-semibold text-xs flex items-center justify-center cursor-pointer border border-zinc-700 shadow">
               U
@@ -201,7 +193,6 @@
       <!-- VIEW 1: STUDIO CANVAS -->
       <section id="view-canvas" class="flex-1 flex flex-col items-center justify-center relative overflow-y-auto p-4 sm:p-6">
         
-        <!-- Empty State Dropzone -->
         <div id="dropzone" class="flex flex-col items-center justify-center space-y-4 text-center cursor-pointer border-2 border-dashed border-transparent hover:border-zinc-800 p-6 sm:p-8 rounded-3xl transition">
           <input type="file" id="media-file-input" class="hidden" accept="image/*,video/*">
           
@@ -214,7 +205,6 @@
           <p data-i18n="empty_canvas_subtitle" class="text-[11px] text-zinc-500">Click or drag image for image-to-video</p>
         </div>
 
-        <!-- Asset Pill -->
         <div id="asset-pill" class="hidden items-center space-x-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-full mb-3">
           <i data-lucide="image" class="w-3.5 h-3.5 text-blue-400"></i>
           <span id="asset-name" class="text-xs text-zinc-300 max-w-xs truncate font-mono">image.png</span>
@@ -223,7 +213,6 @@
           </button>
         </div>
 
-        <!-- Result View (Video Player) -->
         <div id="result-view" class="hidden w-full max-w-2xl flex flex-col items-center space-y-4">
           <div class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex items-center justify-center shadow-2xl">
             <video id="output-video" controls class="w-full h-full object-cover hidden"></video>
@@ -260,28 +249,26 @@
       <footer class="w-full flex flex-col items-center pb-4 px-3 sm:px-6 z-20">
         <div class="w-full max-w-2xl bg-[#141417] border border-flowBorder rounded-2xl p-2.5 shadow-2xl flex flex-col space-y-2 relative">
           
-          <!-- Textarea Input -->
           <div class="w-full px-2">
             <textarea id="prompt-input" rows="1" data-i18n-ph="prompt_placeholder" placeholder="What do you want to create?"
               class="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none resize-none leading-relaxed overflow-hidden"></textarea>
           </div>
 
-          <!-- Controls Bar -->
           <div class="flex items-center justify-between pt-1 gap-2 flex-wrap sm:flex-nowrap">
             <div class="flex items-center space-x-2">
               <button onclick="triggerAssetUpload()" class="p-1.5 text-zinc-400 hover:text-white hover:bg-flowHover rounded-lg transition" title="Add Assets">
                 <i data-lucide="plus" class="w-4 h-4"></i>
               </button>
 
-              <!-- Dynamic Model Selector -->
+              <!-- Dynamic Model Selector (Synced with Firestore in Real-time) -->
               <div class="relative">
                 <select id="model-select" class="appearance-none bg-[#1f1f23] hover:bg-[#27272c] text-zinc-200 text-xs rounded-xl px-3 py-1.5 pr-7 border border-zinc-800 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[180px] truncate">
-                  <!-- Dynamically populated from Firebase / Models -->
+                  <option value="" disabled selected>Loading models...</option>
                 </select>
                 <i data-lucide="chevron-down" class="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"></i>
               </div>
 
-              <!-- SPECS BUTTON & CLICK-TOGGLE POPOVER (FIXED: DOES NOT HIDE ON HOVER/TOUCH) -->
+              <!-- SPECS BUTTON & CLICK-TOGGLE POPOVER -->
               <div class="relative">
                 <button type="button" id="specs-trigger-btn" onclick="toggleSpecsPopover(event)"
                   class="px-2.5 py-1.5 rounded-xl bg-[#1f1f23] hover:bg-[#27272c] text-zinc-300 text-[11px] border border-zinc-800 flex items-center space-x-1 cursor-pointer transition">
@@ -289,7 +276,6 @@
                   <i data-lucide="sliders" class="w-3 h-3 text-zinc-400 ml-1"></i>
                 </button>
 
-                <!-- FIXED POPOVER FORM (Click to open, inside-click safe) -->
                 <div id="specs-popover" onclick="event.stopPropagation()"
                   class="hidden absolute bottom-full mb-3 left-0 sm:left-auto w-64 bg-[#18181c] border border-flowBorder rounded-2xl shadow-2xl p-4 z-50 space-y-3.5">
                   
@@ -350,28 +336,21 @@
 
   <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    // 1. FIREBASE CONFIGURATION
+    // 1. FIREBASE CONFIGURATION (Connected with provided credentials)
     const firebaseConfig = {
-      apiKey: "YOUR_FIREBASE_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyDdtiWw6gzYFqSyuq2-ufFzmJ1PZyL2bCE",
+      authDomain: "flow-studio-a283b.firebaseapp.com",
+      projectId: "flow-studio-a283b",
+      storageBucket: "flow-studio-a283b.firebasestorage.app",
+      messagingSenderId: "539719108009",
+      appId: "1:539719108009:web:b5978cbb311019703d30b8",
+      measurementId: "G-CT21P2M6XY"
     };
 
-    let fbActive = false;
-    let auth, db;
-    try {
-      if (firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
-        firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth();
-        db = firebase.firestore();
-        fbActive = true;
-      }
-    } catch(e) {
-      console.warn("Running in local fallback mode:", e);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
     }
+    const db = firebase.firestore();
 
     // 2. INTERNATIONALIZATION (EN / BN)
     const translations = {
@@ -453,7 +432,7 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    // 3. FIXED SPECS POPOVER TOGGLE (CLICK / TOUCH HANDLER)
+    // 3. FIXED SPECS POPOVER
     const specsPopover = document.getElementById('specs-popover');
     function toggleSpecsPopover(e) {
       if (e) e.stopPropagation();
@@ -464,7 +443,6 @@
       specsPopover.classList.add('hidden');
     }
 
-    // Outside click listener to dismiss specs popover safely
     document.addEventListener('click', (e) => {
       const trigger = document.getElementById('specs-trigger-btn');
       if (!specsPopover.contains(e.target) && !trigger.contains(e.target)) {
@@ -479,7 +457,7 @@
       document.getElementById('specs-display').textContent = `Video · ${r} · ${q} · ${d}`;
     }
 
-    // 4. MOBILE SIDEBAR DRAWER TOGGLE
+    // 4. MOBILE DRAWER
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('mobile-backdrop');
     function toggleMobileSidebar() {
@@ -488,38 +466,62 @@
     }
     backdrop.addEventListener('click', toggleMobileSidebar);
 
-    // 5. DATA SYNC (FIRESTORE OR LOCAL FALLBACK)
+    // 5. FIRESTORE REAL-TIME BRANDING & MODEL SYNC
+    function listenToSiteConfig() {
+      db.collection('settings').doc('site_config').onSnapshot((doc) => {
+        if (doc.exists) {
+          const cfg = doc.data();
+          if (cfg.siteName) {
+            document.getElementById('page-title').textContent = cfg.siteName;
+            document.getElementById('login-site-name').textContent = cfg.siteName;
+            document.getElementById('app-site-name').textContent = cfg.siteName;
+          }
+          if (cfg.disclaimer) {
+            document.getElementById('site-disclaimer').textContent = cfg.disclaimer;
+          }
+          if (cfg.logoUrl) {
+            const logo = `<img src="${cfg.logoUrl}" class="w-full h-full object-contain rounded" alt="Logo">`;
+            document.getElementById('login-logo-box').innerHTML = logo;
+            document.getElementById('app-logo-box').innerHTML = logo;
+          }
+        }
+      }, err => console.warn(err));
+    }
+
+    function listenToActiveModels() {
+      db.collection('models').onSnapshot((snapshot) => {
+        const sel = document.getElementById('model-select');
+        sel.innerHTML = '';
+        
+        let count = 0;
+        snapshot.forEach((doc) => {
+          const m = doc.data();
+          if (m.active !== false) {
+            const opt = document.createElement('option');
+            opt.value = m.id || doc.id;
+            opt.textContent = m.name;
+            if (count === 0) opt.selected = true;
+            sel.appendChild(opt);
+            count++;
+          }
+        });
+
+        if (count === 0) {
+          const opt = document.createElement('option');
+          opt.value = "";
+          opt.textContent = "No active models";
+          sel.appendChild(opt);
+        }
+      }, err => console.error("Firestore models listener error:", err));
+    }
+
+    listenToSiteConfig();
+    listenToActiveModels();
+
+    // 6. CLIENT AUTHENTICATION WITH FIRESTORE
     let currentSessionUser = null;
     let attachedAsset = null;
 
-    async function getStoredUsers() {
-      if (fbActive) {
-        try {
-          const snap = await db.collection('users').get();
-          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        } catch(e) { console.error(e); }
-      }
-      return JSON.parse(localStorage.getItem('flow_users')) || [
-        { id: '1', email: 'demo@gmail.com', password: '123456', provider: 'openrouter', baseUrl: 'https://openrouter.ai/api/v1', apiKey: 'sk-or-v1-998877', active: true }
-      ];
-    }
-
-    async function getActiveModels() {
-      if (fbActive) {
-        try {
-          const snap = await db.collection('models').where('active', '==', true).get();
-          if (!snap.empty) return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        } catch(e) { console.error(e); }
-      }
-      const local = JSON.parse(localStorage.getItem('flow_models')) || [
-        { id: "luma/dream-machine", name: "Luma Dream Machine", active: true },
-        { id: "kling/v1.5", name: "Kling 1.5 Pro", active: true },
-        { id: "runway/gen-3", name: "Runway Gen-3 Alpha", active: true }
-      ];
-      return local.filter(m => m.active !== false);
-    }
-
-    // 6. AUTHENTICATION
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
     const authScreen = document.getElementById('auth-screen');
@@ -528,37 +530,47 @@
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       loginError.classList.add('hidden');
-      const email = document.getElementById('login-email').value.trim();
+      const email = document.getElementById('login-email').value.trim().toLowerCase();
       const password = document.getElementById('login-password').value;
 
-      const userList = await getStoredUsers();
-      const user = userList.find(u => u.email.toLowerCase() === email.toLowerCase());
+      try {
+        const querySnap = await db.collection('users').where('email', '==', email).get();
+        if (querySnap.empty) {
+          loginError.textContent = currentLang === 'en' ? "Account not found. Contact administrator." : "অ্যাকাউন্ট পাওয়া যায়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।";
+          loginError.classList.remove('hidden');
+          return;
+        }
 
-      if (!user) {
-        loginError.textContent = currentLang === 'en' ? "Account not found. Contact administrator." : "অ্যাকাউন্ট পাওয়া যায়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।";
+        let userFound = null;
+        querySnap.forEach(doc => { userFound = { id: doc.id, ...doc.data() }; });
+
+        if (userFound.password !== password) {
+          loginError.textContent = currentLang === 'en' ? "Incorrect password provided." : "ভুল পাসওয়ার্ড দেওয়া হয়েছে।";
+          loginError.classList.remove('hidden');
+          return;
+        }
+
+        if (userFound.active === false) {
+          loginError.textContent = currentLang === 'en' ? "Your account is currently suspended." : "আপনার অ্যাকাউন্টটি সাময়িক স্থগিত রয়েছে।";
+          loginError.classList.remove('hidden');
+          return;
+        }
+
+        currentSessionUser = userFound;
+        authScreen.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+
+        document.getElementById('user-display-email').textContent = userFound.email;
+        document.getElementById('user-avatar').textContent = userFound.email.charAt(0).toUpperCase();
+
+        listenToUserGenerations();
+        renderIcons();
+
+      } catch (err) {
+        console.error(err);
+        loginError.textContent = "Firebase connection error: " + err.message;
         loginError.classList.remove('hidden');
-        return;
       }
-      if (user.password !== password) {
-        loginError.textContent = currentLang === 'en' ? "Incorrect password provided." : "ভুল পাসওয়ার্ড দেওয়া হয়েছে।";
-        loginError.classList.remove('hidden');
-        return;
-      }
-      if (user.active === false) {
-        loginError.textContent = currentLang === 'en' ? "Your account is currently suspended." : "আপনার অ্যাকাউন্টটি সাময়িক স্থগিত রয়েছে।";
-        loginError.classList.remove('hidden');
-        return;
-      }
-
-      currentSessionUser = user;
-      authScreen.classList.add('hidden');
-      mainApp.classList.remove('hidden');
-
-      document.getElementById('user-display-email').textContent = user.email;
-      document.getElementById('user-avatar').textContent = user.email.charAt(0).toUpperCase();
-
-      await loadActiveModels();
-      renderIcons();
     });
 
     document.getElementById('logout-btn').addEventListener('click', () => {
@@ -566,19 +578,6 @@
       mainApp.classList.add('hidden');
       authScreen.classList.remove('hidden');
     });
-
-    async function loadActiveModels() {
-      const activeList = await getActiveModels();
-      const sel = document.getElementById('model-select');
-      sel.innerHTML = '';
-      activeList.forEach((m, idx) => {
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        opt.textContent = m.name;
-        if (idx === 0) opt.selected = true;
-        sel.appendChild(opt);
-      });
-    }
 
     // 7. FILE ATTACHMENT
     const fileInput = document.getElementById('media-file-input');
@@ -601,7 +600,7 @@
       document.getElementById('asset-pill').classList.remove('flex');
     }
 
-    // 8. GENERATE VIDEO (CREDITS DIRECTLY CUT FROM CLIENT'S ROUTER KEY)
+    // 8. GENERATE VIDEO
     const generateBtn = document.getElementById('generate-btn');
     const promptInput = document.getElementById('prompt-input');
     const resultView = document.getElementById('result-view');
@@ -651,20 +650,55 @@
           model,
           videoUrl: vid,
           specs: document.getElementById('specs-display').textContent,
-          createdAt: new Date().toLocaleTimeString()
+          createdAt: new Date().toLocaleTimeString(),
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        if (fbActive) {
-          try { await db.collection('generations').add(newGen); } catch(e){}
+        try {
+          await db.collection('generations').add(newGen);
+        } catch(e) {
+          console.error("Firestore save error:", e);
         }
-        let history = JSON.parse(localStorage.getItem('flow_generations')) || [];
-        history.unshift(newGen);
-        localStorage.setItem('flow_generations', JSON.stringify(history));
 
       }, 3500);
     });
 
-    // 9. VIEW SWITCHING
+    // 9. REAL-TIME GALLERY FOR USER
+    function listenToUserGenerations() {
+      if (!currentSessionUser) return;
+      db.collection('generations')
+        .where('userEmail', '==', currentSessionUser.email)
+        .onSnapshot((snapshot) => {
+          const grid = document.getElementById('gallery-grid');
+          document.getElementById('gallery-count').textContent = `${snapshot.size} items`;
+          grid.innerHTML = '';
+
+          if (snapshot.empty) {
+            grid.innerHTML = `<div class="col-span-full text-center py-12 text-xs text-zinc-500">No media generated yet.</div>`;
+            return;
+          }
+
+          snapshot.forEach((doc) => {
+            const item = doc.data();
+            const card = document.createElement('div');
+            card.className = "bg-flowCard border border-flowBorder rounded-xl overflow-hidden p-2.5 space-y-2";
+            card.innerHTML = `
+              <div class="aspect-video bg-black rounded-lg overflow-hidden">
+                <video src="${item.videoUrl}" controls class="w-full h-full object-cover"></video>
+              </div>
+              <div class="px-1">
+                <p class="text-xs text-zinc-200 font-medium truncate">${item.prompt}</p>
+                <div class="flex items-center justify-between text-[10px] text-zinc-500 mt-1">
+                  <span>${item.model}</span>
+                  <span>${item.createdAt || ''}</span>
+                </div>
+              </div>
+            `;
+            grid.appendChild(card);
+          });
+        });
+    }
+
     function switchView(view) {
       const cvs = document.getElementById('view-canvas');
       const gal = document.getElementById('view-gallery');
@@ -681,57 +715,23 @@
         gal.classList.remove('hidden');
         bG.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl bg-flowActive text-white text-xs font-medium transition";
         bC.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition";
-        renderGallery();
       }
       if (window.innerWidth < 768) toggleMobileSidebar();
       renderIcons();
     }
 
-    function renderGallery() {
-      const history = (JSON.parse(localStorage.getItem('flow_generations')) || []).filter(h => h.userEmail === currentSessionUser.email);
-      const grid = document.getElementById('gallery-grid');
-      document.getElementById('gallery-count').textContent = `${history.length} items`;
-      grid.innerHTML = '';
-
-      if (history.length === 0) {
-        grid.innerHTML = `<div class="col-span-full text-center py-12 text-xs text-zinc-500">No media generated yet.</div>`;
-        return;
-      }
-      history.forEach(item => {
-        const card = document.createElement('div');
-        card.className = "bg-flowCard border border-flowBorder rounded-xl overflow-hidden p-2.5 space-y-2";
-        card.innerHTML = `
-          <div class="aspect-video bg-black rounded-lg overflow-hidden">
-            <video src="${item.videoUrl}" controls class="w-full h-full object-cover"></video>
-          </div>
-          <div class="px-1">
-            <p class="text-xs text-zinc-200 font-medium truncate">${item.prompt}</p>
-            <div class="flex items-center justify-between text-[10px] text-zinc-500 mt-1">
-              <span>${item.model}</span>
-              <span>${item.createdAt}</span>
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    function clearMyHistory() {
+    async function clearMyHistory() {
       if (confirm(currentLang === 'en' ? "Clear all your generated videos?" : "আপনার তৈরি করা সকল ভিডিও হিস্ট্রি মুছে ফেলবেন?")) {
-        let all = JSON.parse(localStorage.getItem('flow_generations')) || [];
-        all = all.filter(h => h.userEmail !== currentSessionUser.email);
-        localStorage.setItem('flow_generations', JSON.stringify(all));
-        renderGallery();
+        const snap = await db.collection('generations').where('userEmail', '==', currentSessionUser.email).get();
+        snap.forEach(d => d.ref.delete());
       }
     }
 
-    // Auto-expand input
     promptInput.addEventListener('input', function() {
       this.style.height = 'auto';
       this.style.height = (this.scrollHeight) + 'px';
     });
 
-    // Initialize Language & Icons
     setLanguage(currentLang);
     renderIcons();
   </script>
