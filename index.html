@@ -166,7 +166,7 @@
 
         <div class="flex items-center space-x-2 sm:space-x-3">
           <button onclick="toggleLanguage()" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white text-xs flex items-center space-x-1">
-            <i data-lucide="globe" class="w-3 h-3"></i>
+            <i data-lucide="globe" class="w-3.5 h-3.5"></i>
             <span class="lang-label font-mono font-bold">BN</span>
           </button>
 
@@ -215,18 +215,19 @@
         <!-- Output Box -->
         <div id="result-view" class="hidden w-full max-w-2xl flex flex-col items-center space-y-4">
           <div id="output-box" class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex flex-col items-center justify-center shadow-2xl p-2 sm:p-4">
-            <video id="output-video" controls autoplay loop class="w-full h-full object-cover hidden rounded-xl"></video>
+            <video id="output-video" controls autoplay loop playsinline class="w-full h-full object-contain hidden rounded-xl"></video>
             
-            <div id="loading-spinner" class="hidden flex flex-col items-center space-y-3">
-              <div class="w-9 h-9 border-2 border-zinc-600 border-t-white rounded-full animate-spin"></div>
-              <span id="router-feedback-status" class="text-xs text-zinc-300 font-mono">Routing through Provider API...</span>
+            <div id="loading-spinner" class="hidden flex flex-col items-center space-y-3 text-center px-4">
+              <div class="w-10 h-10 border-2 border-zinc-600 border-t-emerald-400 rounded-full animate-spin"></div>
+              <span id="router-feedback-status" class="text-xs text-zinc-300 font-mono">Processing request...</span>
+              <span class="text-[10px] text-zinc-500 font-sans">Connecting to your assigned model and GPU cluster...</span>
             </div>
           </div>
           
           <div class="flex items-center justify-between w-full px-2">
             <div id="output-prompt-text" class="text-xs text-zinc-400 italic max-w-md truncate"></div>
-            <a id="download-btn" href="#" download="video.mp4" 
-              class="hidden px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs text-white border border-zinc-700 items-center space-x-1.5 transition">
+            <a id="download-btn" href="#" target="_blank" download="generated-video.mp4" 
+              class="hidden px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs text-black font-semibold items-center space-x-1.5 transition">
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
               <span data-i18n="btn_download">Download</span>
             </a>
@@ -260,9 +261,9 @@
                 <i data-lucide="plus" class="w-4 h-4"></i>
               </button>
 
-              <!-- Dynamic Model Selector -->
+              <!-- DYNAMIC MODEL SELECTOR (Strictly from Admin Panel) -->
               <div class="relative">
-                <select id="model-select" class="appearance-none bg-[#1f1f23] hover:bg-[#27272c] text-zinc-200 text-xs rounded-xl px-3 py-1.5 pr-7 border border-zinc-800 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[180px] truncate">
+                <select id="model-select" class="appearance-none bg-[#1f1f23] hover:bg-[#27272c] text-zinc-200 text-xs rounded-xl px-3 py-1.5 pr-7 border border-zinc-800 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[200px] truncate">
                   <option value="" disabled selected>Loading models...</option>
                 </select>
                 <i data-lucide="chevron-down" class="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"></i>
@@ -500,6 +501,7 @@
       }, err => console.warn(err));
     }
 
+    // PURE DYNAMIC MODEL LOADER (Strictly from Firestore - Zero Hardcoded Models)
     function listenToActiveModels() {
       db.collection('models').onSnapshot((snapshot) => {
         const sel = document.getElementById('model-select');
@@ -508,10 +510,10 @@
         let count = 0;
         snapshot.forEach((doc) => {
           const m = doc.data();
-          if (m.active !== false) {
+          if (m.active !== false && m.id) {
             const opt = document.createElement('option');
-            opt.value = m.id || doc.id;
-            opt.textContent = m.name;
+            opt.value = m.id.trim();
+            opt.textContent = m.name || m.id;
             if (count === 0) opt.selected = true;
             sel.appendChild(opt);
             count++;
@@ -521,7 +523,7 @@
         if (count === 0) {
           const opt = document.createElement('option');
           opt.value = "";
-          opt.textContent = "No active models";
+          opt.textContent = "No active models in Admin";
           sel.appendChild(opt);
         }
       }, err => console.error("Firestore models listener error:", err));
@@ -635,7 +637,7 @@
       document.getElementById('asset-pill').classList.remove('flex');
     }
 
-    // ================= 8. UNIVERSAL AI VIDEO & MULTI-PROVIDER ENGINE =================
+    // ================= 8. 100% PURE DYNAMIC API ENGINE (ZERO HARDCODED MODELS) =================
     const generateBtn = document.getElementById('generate-btn');
     const promptInput = document.getElementById('prompt-input');
     const resultView = document.getElementById('result-view');
@@ -648,15 +650,20 @@
 
     generateBtn.addEventListener('click', async () => {
       const prompt = promptInput.value.trim();
-      const model = document.getElementById('model-select').value;
+      const selectedModelId = (document.getElementById('model-select').value || '').trim();
       
       if (!prompt) {
         alert(currentLang === 'en' ? "Please enter a prompt first!" : "অনুগ্রহ করে একটি প্রম্পট লিখুন!");
         return;
       }
 
-      if (!currentSessionUser) {
-        alert("Session expired. Please log in again.");
+      if (!selectedModelId) {
+        alert("No AI model selected or available. Please add/activate models in Admin Panel.");
+        return;
+      }
+
+      if (!currentSessionUser || !currentSessionUser.apiKey) {
+        alert("No API key configured for your account. Please set it in Admin Panel.");
         return;
       }
 
@@ -672,77 +679,118 @@
       outputPromptText.textContent = `"${prompt}"`;
       generateBtn.disabled = true;
 
-      const provider = (currentSessionUser.provider || 'openrouter').toLowerCase();
-      const baseUrl = (currentSessionUser.baseUrl || '').replace(/\/+$/, '');
+      // সরাসরি অ্যাডমিন প্যানেল থেকে পাওয়া ভ্যালু ব্যবহার করা হচ্ছে
+      const baseUrl = (currentSessionUser.baseUrl || '').trim().replace(/\/+$/, '');
       const apiKey = (currentSessionUser.apiKey || '').trim();
+      const provider = (currentSessionUser.provider || '').toLowerCase();
+
+      // এপিআই প্রোভাইডার ডিটেকশন (Fal.ai Queue vs OpenAI/OpenRouter Chat)
+      const isQueueProvider = provider.includes('fal') || 
+                             baseUrl.includes('fal.run') || 
+                             baseUrl.includes('fal.ai') ||
+                             apiKey.includes(':');
 
       try {
-        // CASE A: POLLINATIONS FREE VIDEO (INSTANT 100% WORKING VIDEO GENERATION)
-        if (provider === 'pollinations' || baseUrl.includes('pollinations.ai') || model.toLowerCase().includes('pollinations')) {
-          routerFeedbackStatus.textContent = "Synthesizing AI Video via Pollinations Engine...";
-          
-          // Pollinations Direct Video URL (No credit card or payment needed)
-          const videoUrl = `https://gen.pollinations.ai/video/${encodeURIComponent(prompt)}?model=pollinations/video&aspectRatio=16:9${apiKey ? `&key=${apiKey}` : ''}`;
-          
-          // Pre-load the video
-          outputVideo.src = videoUrl;
-          outputVideo.onloadeddata = () => {
-            loadingSpinner.classList.add('hidden');
-            outputVideo.classList.remove('hidden');
-            outputVideo.play();
-            downloadBtn.href = videoUrl;
-            downloadBtn.classList.remove('hidden');
-            downloadBtn.classList.add('flex');
-            generateBtn.disabled = false;
-          };
-          outputVideo.onerror = () => {
-            throw new Error("Pollinations video stream could not be loaded directly. Retrying fallback stream...");
-          };
+        if (isQueueProvider) {
+          // ================= QUEUE BASED VIDEO PIPELINE (e.g. Fal.ai) =================
+          const falBase = baseUrl || 'https://queue.fal.run';
+          const cleanModelSlug = selectedModelId.replace(/^\/+/, '');
+          const submitUrl = `${falBase}/${cleanModelSlug}`;
+          const authHeader = apiKey.startsWith('Key ') || apiKey.startsWith('Bearer ') ? apiKey : `Key ${apiKey}`;
 
-          saveGenerationHistory(prompt, model, videoUrl, null);
-          return;
-        }
+          routerFeedbackStatus.textContent = `Submitting to Queue: ${cleanModelSlug}...`;
 
-        // CASE B: HUGGING FACE INFERENCE API
-        if (provider === 'huggingface' || baseUrl.includes('huggingface.co')) {
-          routerFeedbackStatus.textContent = `Connecting to Hugging Face Model (${model})...`;
-          
-          const hfEndpoint = `https://api-inference.huggingface.co/models/${model}`;
-          const response = await fetch(hfEndpoint, {
+          // Step 1: Submit Prompt to Queue
+          const submitRes = await fetch(submitUrl, {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${apiKey}`,
+              "Authorization": authHeader,
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({ inputs: prompt })
+            body: JSON.stringify({
+              prompt: prompt
+            })
           });
 
-          if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`Hugging Face Error (${response.status}): ${errText}`);
+          if (!submitRes.ok) {
+            const errData = await submitRes.text();
+            throw new Error(`API Queue Error (${submitRes.status}): ${errData}`);
           }
 
-          // Hugging Face returns raw binary blob for video/image
-          const blob = await response.blob();
-          const videoBlobUrl = URL.createObjectURL(blob);
+          const submitData = await submitRes.json();
+          const requestId = submitData.request_id;
+          const statusUrl = submitData.status_url || `${falBase}/${cleanModelSlug}/requests/${requestId}/status`;
+          const responseUrl = submitData.response_url || `${falBase}/${cleanModelSlug}/requests/${requestId}`;
 
+          // Step 2: Live Polling Loop
+          let status = submitData.status || "IN_QUEUE";
+          let attempts = 0;
+          const maxAttempts = 70; // 3.5 minutes
+
+          while (status !== "COMPLETED" && status !== "OK" && attempts < maxAttempts) {
+            await new Promise(r => setTimeout(r, 3000));
+            attempts++;
+
+            const checkRes = await fetch(statusUrl, {
+              headers: { "Authorization": authHeader }
+            });
+
+            if (!checkRes.ok) {
+              throw new Error(`Status check failed (${checkRes.status})`);
+            }
+
+            const checkData = await checkRes.json();
+            status = checkData.status;
+
+            if (status === "IN_QUEUE") {
+              const pos = checkData.queue_position !== undefined ? ` (Queue Pos: ${checkData.queue_position})` : '';
+              routerFeedbackStatus.textContent = `In Queue${pos}... Please wait...`;
+            } else if (status === "IN_PROGRESS") {
+              routerFeedbackStatus.textContent = `Rendering video frames on GPU (${attempts * 3}s elapsed)...`;
+            } else if (status === "FAILED") {
+              throw new Error(checkData.error || "Generation failed on remote GPU");
+            }
+          }
+
+          if (status !== "COMPLETED" && status !== "OK") {
+            throw new Error("Generation timed out. The server took too long to complete.");
+          }
+
+          // Step 3: Fetch Completed Output
+          routerFeedbackStatus.textContent = "Loading generated video stream...";
+          const finalRes = await fetch(responseUrl, {
+            headers: { "Authorization": authHeader }
+          });
+
+          if (!finalRes.ok) {
+            throw new Error(`Failed to retrieve output (${finalRes.status})`);
+          }
+
+          const finalData = await finalRes.json();
+          const videoUrl = finalData.video?.url || finalData.video_url || finalData.output?.url || (Array.isArray(finalData.images) && finalData.images[0]?.url);
+
+          if (!videoUrl) {
+            throw new Error("No video file URL found in response.");
+          }
+
+          // Render Live Video
           loadingSpinner.classList.add('hidden');
-          outputVideo.src = videoBlobUrl;
+          outputVideo.src = videoUrl;
           outputVideo.classList.remove('hidden');
           outputVideo.play();
 
-          downloadBtn.href = videoBlobUrl;
+          downloadBtn.href = videoUrl;
           downloadBtn.classList.remove('hidden');
           downloadBtn.classList.add('flex');
           generateBtn.disabled = false;
 
-          saveGenerationHistory(prompt, model, videoBlobUrl, null);
+          saveGenerationHistory(prompt, selectedModelId, videoUrl, null);
           return;
         }
 
-        // CASE C: OPENROUTER / AGENTROUTER / OPENAI COMPATIBLE (DEFAULT)
-        routerFeedbackStatus.textContent = `Routing via ${provider.toUpperCase()} (${model})...`;
-        const endpoint = `${baseUrl || 'https://openrouter.ai/api/v1'}/chat/completions`;
+        // ================= OPENROUTER / CHAT LLM PIPELINE =================
+        routerFeedbackStatus.textContent = `Routing via API (${selectedModelId})...`;
+        const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl || 'https://openrouter.ai/api/v1'}/chat/completions`;
 
         const response = await fetch(endpoint, {
           method: "POST",
@@ -753,16 +801,13 @@
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: model || "deepseek/deepseek-r1:free",
+            model: selectedModelId,
             messages: [
               {
                 role: "system",
                 content: "You are a professional AI Video Director. Provide a vivid cinematic shot script, camera movements, and scene breakdown for this video prompt."
               },
-              {
-                role: "user",
-                content: prompt
-              }
+              { role: "user", content: prompt }
             ]
           })
         });
@@ -777,7 +822,7 @@
 
         const aiResponseContent = data.choices && data.choices[0]?.message?.content 
           ? data.choices[0].message.content 
-          : "Generation completed successfully!";
+          : "Generation completed!";
 
         const textCard = document.createElement('div');
         textCard.id = "ai-text-response";
@@ -787,7 +832,7 @@
         document.getElementById('output-box').appendChild(textCard);
         renderIcons();
 
-        saveGenerationHistory(prompt, model, null, aiResponseContent.substring(0, 300));
+        saveGenerationHistory(prompt, selectedModelId, null, aiResponseContent.substring(0, 300));
 
       } catch (err) {
         console.error("Generation Error:", err);
@@ -802,7 +847,6 @@
             <i data-lucide="alert-triangle" class="w-4 h-4"></i> API Error:
           </div>
           <div class="leading-relaxed font-mono">${err.message}</div>
-          <div class="mt-2 text-[10px] text-zinc-400">টিপস: আপনি যদি লাইভ ভিডিও প্লেয়ার টেস্ট করতে চান, তাহলে নিচের নির্দেশিকা অনুযায়ী Pollinations Video ইঞ্জিনটি সেট করুন।</div>
         `;
         document.getElementById('output-box').appendChild(errorCard);
         renderIcons();
