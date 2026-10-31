@@ -10,7 +10,6 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <!-- QR Code Generator & Camera Scanner Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -56,12 +55,20 @@
     }
     .drag-handle:active { cursor: grabbing; }
 
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
     @media (max-width: 768px) {
       #dock-wrapper {
-        transform: scale(0.85);
-        transform-origin: bottom left;
         bottom: 12px !important;
-        left: 12px !important;
+        left: 8px !important;
+        right: 8px !important;
+        max-width: calc(100vw - 16px);
+      }
+      #dock-expanded {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 6px 8px;
       }
     }
   </style>
@@ -69,13 +76,13 @@
 <body class="flex flex-col h-screen w-screen overflow-hidden select-none bg-black">
 
   <!-- ================= 0. MAINTENANCE OVERLAY ================= -->
-  <div id="maintenance-screen" class="fixed inset-0 z-[9999999] bg-black/95 backdrop-blur-2xl hidden flex-col items-center justify-center p-6 text-center select-none">
-    <div class="max-w-md w-full bg-[#111114] border border-amber-500/30 p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-4">
+  <div id="maintenance-screen" class="fixed inset-0 z-[9999999] bg-black/95 backdrop-blur-2xl hidden flex-col items-center justify-center p-4 text-center select-none">
+    <div class="max-w-md w-full bg-[#111114] border border-amber-500/30 p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-4">
       <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
         <i data-lucide="wrench" class="w-7 h-7 animate-pulse"></i>
       </div>
       <span class="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold uppercase tracking-wider border border-amber-500/20">System Maintenance</span>
-      <h2 id="maint-title" class="text-xl font-bold text-white tracking-wide">সার্ভার রক্ষণাবেক্ষণ চলছে</h2>
+      <h2 id="maint-title" class="text-lg sm:text-xl font-bold text-white tracking-wide">সার্ভার রক্ষণাবেক্ষণ চলছে</h2>
       <p id="maint-desc" class="text-xs text-zinc-400 leading-relaxed font-sans">আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।</p>
       
       <div class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between text-xs text-zinc-300">
@@ -87,18 +94,18 @@
 
   <!-- ================= 0.1 ADMIN PRIVACY SHIELD ================= -->
   <div id="admin-privacy-screen" style="display: none; position: fixed; inset: 0; z-index: 2147483647; background: #000; flex-direction: column; align-items: center; justify-content: center; user-select: none;">
-    <div class="flex flex-col items-center space-y-4">
+    <div class="flex flex-col items-center space-y-4 p-4 text-center">
       <div class="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400 shadow-2xl">
-        <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div class="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
       <h3 class="text-base font-semibold text-white tracking-wide">Syncing Ultra Studio Engine</h3>
       <p class="text-xs text-zinc-500 max-w-sm text-center">Connecting dedicated AI neural pipelines. Please wait a moment...</p>
     </div>
   </div>
 
-  <!-- ================= 1. CLIENT LOGIN SCREEN (WITH QR CODE LINKING) ================= -->
-  <div id="auth-screen" class="fixed inset-0 z-50 bg-[#050507] flex items-center justify-center p-4">
-    <div class="w-full max-w-sm bg-[#111114] border border-[#1f1f24] p-7 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center relative">
+  <!-- ================= 1. CLIENT LOGIN SCREEN ================= -->
+  <div id="auth-screen" class="fixed inset-0 z-50 bg-[#050507] flex items-center justify-center p-4 overflow-y-auto">
+    <div class="w-full max-w-sm bg-[#111114] border border-[#1f1f24] p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center relative my-auto">
       
       <div id="login-logo-container" class="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-white mb-2 overflow-hidden shadow">
         <i data-lucide="sparkles" class="w-6 h-6 text-blue-400"></i>
@@ -107,7 +114,7 @@
       <p id="login-subtext" class="text-xs text-zinc-400 mb-5 text-center">Sign in to launch your dedicated studio</p>
 
       <!-- VIEW A: EMAIL / PASSWORD LOGIN -->
-      <form id="login-form" class="w-full space-y-4">
+      <form id="login-form" class="w-full space-y-3.5 sm:space-y-4">
         <div>
           <label class="block text-xs font-medium text-zinc-400 mb-1">Gmail / Email</label>
           <input type="email" id="login-email" required placeholder="client@gmail.com"
@@ -132,7 +139,7 @@
           <span>Launch Google Flow Ultra →</span>
         </button>
 
-        <div class="relative my-3 flex items-center justify-center">
+        <div class="relative my-2 sm:my-3 flex items-center justify-center">
           <div class="border-t border-zinc-800 w-full"></div>
           <span class="bg-[#111114] px-3 text-[10px] text-zinc-500 uppercase tracking-wider font-mono absolute">OR</span>
         </div>
@@ -144,13 +151,13 @@
         </button>
       </form>
 
-      <!-- VIEW B: WHATSAPP-STYLE QR CODE PAIRING VIEW -->
+      <!-- VIEW B: QR CODE PAIRING VIEW -->
       <div id="qr-login-container" class="hidden w-full flex-col items-center space-y-4">
         <div class="p-3 bg-white rounded-2xl shadow-xl flex items-center justify-center">
-          <div id="qrcode-box" class="w-[180px] h-[180px] flex items-center justify-center"></div>
+          <div id="qrcode-box" class="w-[160px] h-[160px] sm:w-[180px] sm:h-[180px] flex items-center justify-center"></div>
         </div>
 
-        <div class="text-center space-y-1">
+        <div class="text-center space-y-1 px-2">
           <p class="text-xs font-medium text-white">১ম ডিভাইস থেকে স্ক্যান করুন</p>
           <p class="text-[11px] text-zinc-400 leading-normal">যে ডিভাইসে অ্যাকাউন্ট লগইন আছে, তার ডকের <b>Devices</b> মেনু থেকে স্ক্যান করুন।</p>
         </div>
@@ -180,12 +187,12 @@
       </div>
     </div>
 
-    <!-- ================= 3. DRAGGABLE & RE-EXPANDABLE DOCK ================= -->
-    <div id="dock-wrapper" style="position: fixed; bottom: 24px; left: 24px; z-index: 1000;">
+    <!-- ================= 3. MOBILE RESPONSIVE DOCK ================= -->
+    <div id="dock-wrapper" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
       
-      <div id="dock-expanded" class="glass-pill rounded-full px-2.5 py-1.5 flex items-center space-x-2 text-xs">
+      <div id="dock-expanded" class="glass-pill rounded-full px-2.5 py-1.5 flex items-center space-x-2 text-xs no-scrollbar">
         
-        <div class="drag-handle" title="Drag Anywhere">
+        <div class="drag-handle shrink-0" title="Drag Anywhere">
           <i data-lucide="grip-vertical" class="w-4 h-4 text-zinc-500"></i>
         </div>
 
@@ -211,18 +218,18 @@
           <span id="dock-expiry">30d Left</span>
         </div>
 
-        <!-- 2-DEVICE MANAGER & SCANNER BUTTON -->
+        <!-- 2-DEVICE MANAGER BUTTON -->
         <button type="button" onclick="openDeviceManagerModal()" 
-          class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-blue-950/60 hover:bg-blue-900/80 border border-blue-800 text-[11px] text-blue-300 font-medium transition shrink-0" 
+          class="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-blue-950/60 hover:bg-blue-900/80 border border-blue-800 text-[11px] text-blue-300 font-medium transition shrink-0" 
           title="Manage Linked Devices">
           <i data-lucide="smartphone" class="w-3.5 h-3.5 text-blue-400"></i>
           <span id="dock-device-count">Devices (1/2)</span>
         </button>
 
         <a id="btn-local-download" href="#" target="_blank" download="google-flow-video.mp4" 
-          class="hidden items-center space-x-1 px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-[11px] font-bold shadow-lg transition shrink-0">
+          class="hidden items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-[11px] font-bold shadow-lg transition shrink-0">
           <i data-lucide="download" class="w-3.5 h-3.5 stroke-[2.5]"></i>
-          <span>Download (PC)</span>
+          <span class="hidden sm:inline">Download</span>
         </a>
 
         <button type="button" onclick="reloadStreamFrame()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Reload Engine">
@@ -248,9 +255,9 @@
 
   </div>
 
-  <!-- ================= 4. DEVICE MANAGER & QR SCANNER MODAL ================= -->
+  <!-- ================= 4. DEVICE MANAGER MODAL ================= -->
   <div id="device-modal" class="fixed inset-0 z-[999999] bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="w-full max-w-md bg-[#151519] border border-[#27272f] p-6 rounded-3xl shadow-2xl space-y-5">
+    <div class="w-full max-w-sm sm:max-w-md bg-[#151519] border border-[#27272f] p-5 sm:p-6 rounded-3xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
       
       <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
         <div class="flex items-center space-x-2.5">
@@ -267,19 +274,16 @@
         </button>
       </div>
 
-      <!-- ACTIVE DEVICES LIST -->
       <div id="devices-list" class="space-y-2"></div>
 
-      <!-- CAMERA SCANNER VIEW -->
-      <div id="scanner-wrapper" class="hidden flex-col items-center space-y-3 bg-black border border-zinc-800 rounded-2xl p-4">
-        <div id="qr-reader" class="w-full max-w-[280px] overflow-hidden rounded-xl"></div>
+      <div id="scanner-wrapper" class="hidden flex-col items-center space-y-3 bg-black border border-zinc-800 rounded-2xl p-3 sm:p-4">
+        <div id="qr-reader" class="w-full max-w-[240px] sm:max-w-[280px] overflow-hidden rounded-xl"></div>
         <p class="text-[11px] text-zinc-400 text-center">২য় ডিভাইসের স্ক্রিনের কিউআর কোডের সামনে ক্যামেরা ধরুন</p>
         <button type="button" onclick="stopQrScanner()" class="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs rounded-xl text-zinc-300">
           বন্ধ করুন
         </button>
       </div>
 
-      <!-- LINK NEW DEVICE BUTTON -->
       <button id="btn-open-scanner" onclick="startQrScanner()" 
         class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs rounded-xl transition flex items-center justify-center space-x-2 shadow-lg">
         <i data-lucide="camera" class="w-4 h-4"></i>
@@ -290,7 +294,7 @@
   </div>
 
   <script>
-    // ================= SECURITY: DISABLE RIGHT CLICK & INSPECT SHORTCUTS =================
+    // DISABLE RIGHT CLICK & INSPECT SHORTCUTS
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('keydown', e => {
       if (
@@ -318,7 +322,6 @@
 
     function renderIcons() { if (window.lucide) lucide.createIcons(); }
 
-    // PERSISTENT UNIQUE DEVICE IDENTIFIER
     let myDeviceId = localStorage.getItem('flow_device_id');
     if (!myDeviceId) {
       myDeviceId = 'dev_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
@@ -338,7 +341,36 @@
       renderIcons();
     }
 
-    // 1. MAINTENANCE LISTENER
+    // PRIVACY BLACKOUT FUNCTION
+    let isPrivacyActive = false;
+    function setPrivacyBlackout(active) {
+      const privScreen = document.getElementById('admin-privacy-screen');
+      const streamFrame = document.getElementById('live-stream-frame');
+      isPrivacyActive = !!active;
+
+      if (isPrivacyActive) {
+        privScreen.style.setProperty('display', 'flex', 'important');
+        if (streamFrame.src !== 'about:blank') {
+          streamFrame.src = 'about:blank';
+        }
+      } else {
+        privScreen.style.setProperty('display', 'none', 'important');
+        if (currentSessionUser && !document.getElementById('main-studio').classList.contains('hidden')) {
+          if (streamFrame.src === 'about:blank' || streamFrame.src.includes('about:blank')) {
+            reloadStreamFrame();
+          }
+        }
+      }
+    }
+
+    function listenToAdminPrivacy() {
+      db.collection('settings').doc('admin_privacy').onSnapshot(doc => {
+        const active = doc.exists && doc.data().active === true;
+        setPrivacyBlackout(active);
+      });
+    }
+    listenToAdminPrivacy();
+
     function listenToMaintenance() {
       db.collection('settings').doc('maintenance').onSnapshot(doc => {
         if (doc.exists) {
@@ -361,34 +393,6 @@
     }
     listenToMaintenance();
 
-    // 2. REAL-TIME BULLETPROOF PRIVACY SHIELD
-    let isPrivacyActive = false;
-    function listenToAdminPrivacy() {
-      db.collection('settings').doc('admin_privacy').onSnapshot(doc => {
-        const privScreen = document.getElementById('admin-privacy-screen');
-        const streamFrame = document.getElementById('live-stream-frame');
-        
-        const active = doc.exists && doc.data().active === true;
-        isPrivacyActive = active;
-
-        if (active) {
-          privScreen.style.setProperty('display', 'flex', 'important');
-          if (streamFrame.src !== 'about:blank') {
-            streamFrame.src = 'about:blank';
-          }
-        } else {
-          privScreen.style.setProperty('display', 'none', 'important');
-          if (currentSessionUser && !document.getElementById('main-studio').classList.contains('hidden')) {
-            if (streamFrame.src === 'about:blank' || streamFrame.src.includes('about:blank')) {
-              reloadStreamFrame();
-            }
-          }
-        }
-      });
-    }
-    listenToAdminPrivacy();
-
-    // 3. REALTIME VIDEO DOWNLOAD LISTENER
     function listenToGeneratedVideos() {
       db.collection('settings').doc('latest_video').onSnapshot(doc => {
         if (doc.exists) {
@@ -410,6 +414,9 @@
       db.collection('settings').doc('site_config').onSnapshot(doc => {
         if (doc.exists) {
           const cfg = doc.data();
+          if (typeof cfg.privacyActive !== 'undefined') {
+            setPrivacyBlackout(cfg.privacyActive === true);
+          }
           if (cfg.streamUrl) globalStreamUrl = cfg.streamUrl.trim();
           if (cfg.siteName) {
             document.getElementById('page-title').textContent = cfg.siteName;
@@ -440,7 +447,6 @@
           const doc = await db.collection('users').doc(uid).get();
           if (doc.exists) {
             const data = { id: doc.id, ...doc.data() };
-            // Ensure this device is still authorized in the active devices list
             const devices = data.activeDevices || [];
             const isAuthorized = devices.some(d => d.id === myDeviceId);
 
@@ -477,7 +483,6 @@
       return true;
     }
 
-    // ================= EMAIL / PASSWORD LOGIN (WITH 2-DEVICE ENFORCEMENT) =================
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const err = document.getElementById('login-error');
@@ -503,17 +508,15 @@
 
         if (!validateUserStatus(userFound)) return;
 
-        // 2-DEVICE LIMIT CHECK
         let devices = userFound.activeDevices || [];
         const isAlreadyLinked = devices.some(d => d.id === myDeviceId);
 
         if (!isAlreadyLinked) {
           if (devices.length >= 2) {
-            err.innerHTML = `⚠️ <b>লগইন লিমিট পূর্ণ!</b> এই অ্যাকাউন্টটি ইতিমধ্যে ২টি ডিভাইসে চালু আছে। আগের কোনো ডিভাইস থেকে লগআউট করুন অথবা কিউআর কোড দিয়ে লিঙ্ক করুন।`;
+            err.innerHTML = `⚠️ <b>লগইন লিমিট পূর্ণ!</b> এই অ্যাকাউন্টটি ইতিমধ্যে ২টি ডিভাইসে চালু আছে।`;
             err.classList.remove('hidden');
             return;
           }
-          // Register this device
           const deviceName = /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile Device' : 'Desktop / PC';
           devices.push({ id: myDeviceId, name: deviceName, linkedAt: Date.now() });
           await db.collection('users').doc(userFound.id).update({ activeDevices: devices });
@@ -528,7 +531,6 @@
       }
     });
 
-    // ================= WHATSAPP-STYLE QR CODE PAIRING LOGIC =================
     let qrSessionDocId = null;
     let qrSessionUnsubscribe = null;
 
@@ -541,10 +543,8 @@
       const qrBox = document.getElementById('qrcode-box');
       qrBox.innerHTML = '';
 
-      // Generate a unique session token
       qrSessionDocId = 'qr_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
       
-      // Save session in firestore
       await db.collection('qr_pairings').doc(qrSessionDocId).set({
         status: 'pending',
         targetDeviceId: myDeviceId,
@@ -552,17 +552,15 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      // Render QR
       new QRCode(qrBox, {
         text: JSON.stringify({ action: "link_flow", sessionId: qrSessionDocId }),
-        width: 180,
-        height: 180,
+        width: 160,
+        height: 160,
         colorDark: "#000000",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
       });
 
-      // Listen for approval from Device 1
       qrSessionUnsubscribe = db.collection('qr_pairings').doc(qrSessionDocId).onSnapshot(async doc => {
         if (doc.exists) {
           const data = doc.data();
@@ -586,7 +584,6 @@
       document.getElementById('login-subtext').textContent = "Sign in to launch your dedicated studio";
     }
 
-    // ================= START STUDIO & LIVE USER LISTENER =================
     function startStudio(user) {
       currentSessionUser = user;
       authScreen.classList.add('hidden');
@@ -597,13 +594,11 @@
       document.getElementById('dock-credits').textContent = `${user.credits || '5000'} Cr`;
       document.getElementById('dock-expiry').textContent = calculateRemainingDays(user.expiryDate);
 
-      // Sync active session model for the Chromium extension
       db.collection('settings').doc('active_session').set({
         currentModel: assigned,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true }).catch(() => {});
 
-      // Realtime listener for device kick / revoke
       if (userDocUnsubscribe) userDocUnsubscribe();
       userDocUnsubscribe = db.collection('users').doc(user.id).onSnapshot(doc => {
         if (doc.exists) {
@@ -612,7 +607,6 @@
           const devices = uData.activeDevices || [];
           document.getElementById('dock-device-count').textContent = `Devices (${devices.length}/2)`;
           
-          // If this device was removed, kick out immediately
           const isStillValid = devices.some(d => d.id === myDeviceId);
           if (!isStillValid) {
             alert("আপনার এই ডিভাইসটির সেশন লগআউট করা হয়েছে।");
@@ -627,21 +621,21 @@
       renderIcons();
     }
 
-    // 100% Proportional Native Desktop Scaling (Reelovio Model)
     function loadStream(url) {
       frameLoader.classList.remove('hidden');
-      const cleanUrl = url.split('?')[0];
+      const cleanUrl = url.split('?')[0].replace(/\/+$/, '');
       streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=6&cursor=local&clipboard=0&kasm_clipboard=0&control_bar=0&show_control_bar=0`;
       streamFrame.onload = () => frameLoader.classList.add('hidden');
+      setTimeout(() => frameLoader.classList.add('hidden'), 3500);
     }
 
     function reloadStreamFrame() {
       frameLoader.classList.remove('hidden');
-      const cleanUrl = globalStreamUrl.split('?')[0];
+      const cleanUrl = globalStreamUrl.split('?')[0].replace(/\/+$/, '');
       streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=6&cursor=local&clipboard=0&kasm_clipboard=0&control_bar=0&show_control_bar=0&t=${Date.now()}`;
+      setTimeout(() => frameLoader.classList.add('hidden'), 3500);
     }
 
-    // ================= DEVICE MANAGER & CAMERA QR SCANNER =================
     let html5QrCode = null;
 
     function openDeviceManagerModal() {
@@ -654,7 +648,7 @@
       const devices = currentSessionUser.activeDevices || [];
       document.getElementById('dock-device-count').textContent = `Devices (${devices.length}/2)`;
 
-      devices.forEach((dev, idx) => {
+      devices.forEach((dev) => {
         const isCurrent = dev.id === myDeviceId;
         const item = document.createElement('div');
         item.className = "flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-xs";
@@ -674,11 +668,10 @@
         list.appendChild(item);
       });
 
-      // Disable scan button if already 2 devices active
       if (devices.length >= 2) {
         btnScan.disabled = true;
         btnScan.className = "w-full py-2.5 bg-zinc-800 text-zinc-500 font-semibold text-xs rounded-xl cursor-not-allowed flex items-center justify-center space-x-2";
-        btnScan.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i><span>২টি ডিভাইস লিমিট পূর্ণ (আনলিঙ্ক করুন)</span>`;
+        btnScan.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i><span>২টি ডিভাইস লিমিট পূর্ণ</span>`;
       } else {
         btnScan.disabled = false;
         btnScan.className = "w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs rounded-xl transition flex items-center justify-center space-x-2 shadow-lg";
@@ -696,7 +689,7 @@
 
     async function unlinkDevice(deviceId) {
       if (!currentSessionUser) return;
-      if (confirm("এই ডিভাইসটিকে আপনার অ্যাকাউন্ট থেকে বিচ্ছিন্ন (Unlink) করতে চান?")) {
+      if (confirm("এই ডিভাইসটিকে আপনার অ্যাকাউন্ট থেকে আনলিঙ্ক করতে চান?")) {
         const updated = (currentSessionUser.activeDevices || []).filter(d => d.id !== deviceId);
         await db.collection('users').doc(currentSessionUser.id).update({ activeDevices: updated });
         openDeviceManagerModal();
@@ -711,7 +704,7 @@
       html5QrCode = new Html5Qrcode("qr-reader");
       html5QrCode.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
+        { fps: 10, qrbox: { width: 200, height: 200 } },
         async (decodedText) => {
           try {
             const parsed = JSON.parse(decodedText);
@@ -723,8 +716,8 @@
           }
         },
         () => {}
-      ).catch(err => {
-        alert("ক্যামেরা ওপেন করা সম্ভব হয়নি। পারমিশন চেক করুন।");
+      ).catch(() => {
+        alert("ক্যামেরা পারমিশন চেক করুন।");
         stopQrScanner();
       });
     }
@@ -751,7 +744,7 @@
         const sessionRef = db.collection('qr_pairings').doc(sessionId);
         const sDoc = await sessionRef.get();
         if (!sDoc.exists) {
-          alert("কিউআর কোডটির মেয়াদ শেষ হয়ে গেছে!");
+          alert("কিউআর কোডের মেয়াদ শেষ হয়ে গেছে!");
           return;
         }
 
@@ -763,7 +756,6 @@
           return;
         }
 
-        // Add 2nd device to active devices
         devices.push({
           id: sData.targetDeviceId,
           name: sData.targetDeviceName || 'Linked Device',
@@ -772,7 +764,6 @@
 
         await db.collection('users').doc(currentSessionUser.id).update({ activeDevices: devices });
 
-        // Approve pairing session
         await sessionRef.update({
           status: 'approved',
           uid: currentSessionUser.id,
@@ -783,11 +774,10 @@
         closeDeviceManagerModal();
 
       } catch(err) {
-        alert("লিঙ্ক করতে ব্যর্থ হয়েছে: " + err.message);
+        alert("লিঙ্ক ব্যর্থ হয়েছে: " + err.message);
       }
     }
 
-    // ================= DOCK CONTROLS & LOGOUT =================
     const dockExpanded = document.getElementById('dock-expanded');
     const dockCollapsed = document.getElementById('dock-collapsed');
 
@@ -804,7 +794,6 @@
     async function logoutClient() {
       if (currentSessionUser) {
         try {
-          // Remove this device from active devices on logout
           const updated = (currentSessionUser.activeDevices || []).filter(d => d.id !== myDeviceId);
           await db.collection('users').doc(currentSessionUser.id).update({ activeDevices: updated });
         } catch(e) {}
@@ -818,7 +807,6 @@
       hideQrLoginView();
     }
 
-    // ================= DRAG & EXPAND SYSTEM =================
     const dockWrapper = document.getElementById('dock-wrapper');
     let isDragging = false;
     let startX = 0, startY = 0;
@@ -850,8 +838,8 @@
       totalMoved = Math.hypot(dx, dy);
 
       if (totalMoved > 4) {
-        let newX = Math.max(10, Math.min(window.innerWidth - dockWrapper.offsetWidth - 10, initLeft + dx));
-        let newY = Math.max(10, Math.min(window.innerHeight - dockWrapper.offsetHeight - 10, initTop + dy));
+        let newX = Math.max(8, Math.min(window.innerWidth - dockWrapper.offsetWidth - 8, initLeft + dx));
+        let newY = Math.max(8, Math.min(window.innerHeight - dockWrapper.offsetHeight - 8, initTop + dy));
 
         dockWrapper.style.left = `${newX}px`;
         dockWrapper.style.top = `${newY}px`;
