@@ -2,433 +2,307 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title id="page-title">Google Flow</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title id="page-title">Google Flow Ultra</title>
   <link rel="icon" type="image/png" id="siteFavicon" href="https://i.ibb.co.com/NnssXTJY/Photoshop-Extension-Image.png">
-  <link rel="shortcut icon" href="https://i.ibb.co.com/NnssXTJY/Photoshop-Extension-Image.png">
   
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            flowBg: '#000000',
-            flowSidebar: '#09090b',
-            flowCard: '#111114',
-            flowBorder: '#1f1f24',
-            flowHover: '#1a1a20',
-            flowActive: '#24242e'
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- Firebase Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- QR Code Generator & Camera Scanner Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: #000; }
-    ::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
+    body, html {
+      margin: 0; padding: 0; width: 100vw; height: 100vh;
+      background: #000000; color: #fff; overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    
+    .stream-container {
+      width: 100vw; height: 100vh; position: relative;
+      background: #000; overflow: hidden; display: flex;
+      align-items: center; justify-content: center;
+    }
+    .stream-container iframe {
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      display: block;
+      image-rendering: -webkit-optimize-contrast;
+    }
 
-    /* Google Flow Pulsing Glow Animation */
-    @keyframes flowPulse {
-      0%, 100% {
-        border-color: rgba(255, 255, 255, 0.08);
-        box-shadow: 0 0 20px rgba(59, 130, 246, 0.04), inset 0 0 15px rgba(59, 130, 246, 0.02);
-      }
-      50% {
-        border-color: rgba(96, 165, 250, 0.45);
-        box-shadow: 0 0 40px rgba(59, 130, 246, 0.22), inset 0 0 25px rgba(59, 130, 246, 0.08);
-      }
-    }
-    .flow-glow-active {
-      animation: flowPulse 2.8s ease-in-out infinite;
+    /* Draggable Floating Dock */
+    .glass-pill {
+      background: rgba(14, 14, 18, 0.96);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.9);
+      user-select: none;
+      touch-action: none;
     }
 
-    /* Ambient Scanline */
-    @keyframes scanMotion {
-      0% { top: -20%; opacity: 0; }
-      30% { opacity: 0.6; }
-      70% { opacity: 0.6; }
-      100% { top: 110%; opacity: 0; }
+    .drag-handle {
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      padding: 0 4px;
+      color: #71717a;
     }
-    .scan-beam {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 35%;
-      background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.12), transparent);
-      animation: scanMotion 3s ease-in-out infinite;
-      pointer-events: none;
+    .drag-handle:active { cursor: grabbing; }
+
+    @media (max-width: 768px) {
+      #dock-wrapper {
+        transform: scale(0.85);
+        transform-origin: bottom left;
+        bottom: 12px !important;
+        left: 12px !important;
+      }
     }
   </style>
 </head>
-<body class="bg-flowBg text-zinc-200 min-h-screen flex flex-col font-sans overflow-hidden">
+<body class="flex flex-col h-screen w-screen overflow-hidden select-none bg-black">
 
-  <!-- ================= 1. LOGIN SCREEN ================= -->
-  <div id="auth-screen" class="fixed inset-0 z-50 bg-black flex items-center justify-center p-4">
-    <div class="w-full max-w-sm bg-flowCard border border-flowBorder p-6 sm:p-8 rounded-2xl shadow-2xl flex flex-col items-center">
+  <!-- ================= 0. MAINTENANCE OVERLAY ================= -->
+  <div id="maintenance-screen" class="fixed inset-0 z-[9999999] bg-black/95 backdrop-blur-2xl hidden flex-col items-center justify-center p-6 text-center select-none">
+    <div class="max-w-md w-full bg-[#111114] border border-amber-500/30 p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+        <i data-lucide="wrench" class="w-7 h-7 animate-pulse"></i>
+      </div>
+      <span class="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold uppercase tracking-wider border border-amber-500/20">System Maintenance</span>
+      <h2 id="maint-title" class="text-xl font-bold text-white tracking-wide">সার্ভার রক্ষণাবেক্ষণ চলছে</h2>
+      <p id="maint-desc" class="text-xs text-zinc-400 leading-relaxed font-sans">আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।</p>
       
-      <div class="w-full flex justify-end mb-2">
-        <button onclick="toggleLanguage()" class="text-xs px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white flex items-center space-x-1">
-          <i data-lucide="globe" class="w-3.5 h-3.5"></i>
-          <span class="lang-label font-mono">BN</span>
-        </button>
-      </div>
-
-      <div id="login-brand" class="flex items-center space-x-2.5 mb-2">
-        <div id="login-logo-box" class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center border border-zinc-700">
-          <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
-        </div>
-        <span id="login-site-name" class="text-xl font-semibold tracking-wide text-white">Google Flow</span>
-      </div>
-
-      <p data-i18n="login_subtitle" class="text-xs text-zinc-400 mb-6 text-center">Login with your assigned credentials</p>
-
-      <form id="login-form" class="w-full space-y-4">
-        <div>
-          <label data-i18n="email_label" class="block text-xs font-medium text-zinc-400 mb-1">Gmail / Email</label>
-          <input type="email" id="login-email" required placeholder="client@gmail.com"
-            class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors">
-        </div>
-
-        <div>
-          <label data-i18n="password_label" class="block text-xs font-medium text-zinc-400 mb-1">Password</label>
-          <div class="relative">
-            <input type="password" id="login-password" required placeholder="••••••••"
-              class="w-full bg-[#0a0a0c] border border-flowBorder rounded-xl px-3.5 py-2.5 pr-10 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors">
-            <button type="button" onclick="togglePasswordVisibility('login-password', 'eye-icon-login')" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white">
-              <i id="eye-icon-login" data-lucide="eye" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
-
-        <div id="login-error" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-900/50 p-2.5 rounded-lg text-center"></div>
-
-        <button type="submit" id="btn-login-submit"
-          class="w-full py-2.5 bg-white text-black font-semibold text-sm rounded-xl hover:bg-zinc-200 transition-all flex items-center justify-center space-x-2">
-          <span data-i18n="btn_login">Sign In</span>
-          <i data-lucide="arrow-right" class="w-4 h-4"></i>
-        </button>
-      </form>
-
-      <div data-i18n="login_footer_note" class="mt-6 text-[11px] text-zinc-500 text-center">
-        Contact administrator to get an account or assign API keys.
+      <div class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between text-xs text-zinc-300">
+        <span class="text-zinc-500">সম্ভাব্য সময়:</span>
+        <span id="maint-duration" class="font-mono text-amber-300 font-semibold">আনুমানিক ৩০ মিনিট</span>
       </div>
     </div>
   </div>
 
-  <!-- ================= 2. MAIN APPLICATION ================= -->
-  <div id="main-app" class="hidden flex-1 flex w-full h-[100dvh] overflow-hidden relative">
-    
-    <div id="mobile-backdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 hidden md:hidden"></div>
-
-    <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-60 border-r border-flowBorder bg-flowSidebar flex flex-col justify-between p-3.5 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
-      <div class="space-y-5">
-        
-        <div class="flex items-center justify-between px-2 pt-1">
-          <div class="flex items-center space-x-2 text-zinc-400 hover:text-white cursor-pointer">
-            <div id="app-logo-box" class="w-4 h-4 flex items-center justify-center">
-              <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
-            </div>
-            <span id="app-site-name" class="text-xs font-medium text-white truncate max-w-[120px]">Google Flow</span>
-          </div>
-          <button onclick="toggleMobileSidebar()" class="md:hidden text-zinc-400 hover:text-white">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
-        </div>
-
-        <nav class="space-y-1">
-          <button onclick="switchView('canvas')" id="nav-btn-canvas" 
-            class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl bg-flowActive text-white text-xs font-medium transition">
-            <i data-lucide="play-square" class="w-4 h-4 text-blue-400"></i>
-            <span data-i18n="nav_studio" class="sidebar-text">Studio Canvas</span>
-          </button>
-          <button onclick="switchView('gallery')" id="nav-btn-gallery" 
-            class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-            <i data-lucide="layout-grid" class="w-4 h-4"></i>
-            <span data-i18n="nav_all_media" class="sidebar-text">All Projects / Media</span>
-          </button>
-          <button class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-            <i data-lucide="user" class="w-4 h-4"></i>
-            <span data-i18n="nav_characters" class="sidebar-text">Characters</span>
-          </button>
-          <button class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-            <i data-lucide="film" class="w-4 h-4"></i>
-            <span data-i18n="nav_scenes" class="sidebar-text">Scenes</span>
-          </button>
-        </nav>
+  <!-- ================= 0.1 ADMIN PRIVACY SHIELD ================= -->
+  <div id="admin-privacy-screen" style="display: none; position: fixed; inset: 0; z-index: 2147483647; background: #000; flex-direction: column; align-items: center; justify-content: center; user-select: none;">
+    <div class="flex flex-col items-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400 shadow-2xl">
+        <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
-
-      <div class="space-y-1 pt-3 border-t border-flowBorder/60">
-        <button onclick="clearMyHistory()" class="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-          <span data-i18n="nav_clear_history" class="sidebar-text">Clear History</span>
-        </button>
-        <button id="collapse-btn" class="hidden md:flex w-full items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition">
-          <i data-lucide="panel-left-close" class="w-4 h-4"></i>
-          <span data-i18n="nav_collapse" class="sidebar-text">Collapse</span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- MAIN STAGE -->
-    <main class="flex-1 flex flex-col h-full bg-flowBg relative min-w-0 overflow-hidden">
-      
-      <!-- TOP NAVIGATION BAR -->
-      <header class="h-14 border-b border-flowBorder px-4 sm:px-6 flex items-center justify-between gap-2 shrink-0">
-        <div class="flex items-center space-x-2 flex-1 max-w-md">
-          <button onclick="toggleMobileSidebar()" class="md:hidden p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900">
-            <i data-lucide="menu" class="w-4 h-4"></i>
-          </button>
-          <div class="relative w-full">
-            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500"></i>
-            <input type="text" data-i18n-ph="search_placeholder" placeholder="Search prompts or media" 
-              class="w-full bg-[#0f0f12] border border-flowBorder rounded-full pl-9 pr-4 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500">
-          </div>
-        </div>
-
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <button onclick="toggleLanguage()" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white text-xs flex items-center space-x-1">
-            <i data-lucide="globe" class="w-3.5 h-3.5"></i>
-            <span class="lang-label font-mono font-bold">BN</span>
-          </button>
-
-          <div class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-[#18181b] text-zinc-300 text-[10px] font-semibold border border-zinc-800">
-            ULTRA STUDIO
-          </div>
-
-          <div class="relative group">
-            <div id="user-avatar" class="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-semibold text-xs flex items-center justify-center cursor-pointer border border-zinc-700 shadow">
-              U
-            </div>
-            <div class="absolute right-0 mt-2 w-48 bg-flowCard border border-flowBorder rounded-xl shadow-xl py-1 hidden group-hover:block z-50">
-              <div id="user-display-email" class="px-3 py-1.5 text-[11px] text-zinc-400 truncate border-b border-flowBorder">user@flow.ai</div>
-              <button id="logout-btn" class="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-flowHover flex items-center space-x-2">
-                <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-                <span data-i18n="btn_logout">Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <!-- VIEW 1: STUDIO CANVAS -->
-      <section id="view-canvas" class="flex-1 flex flex-col items-center justify-center relative overflow-y-auto p-4 sm:p-6 min-h-0">
-        
-        <!-- Empty State Graphic -->
-        <div id="dropzone" class="flex flex-col items-center justify-center space-y-4 text-center cursor-pointer border-2 border-dashed border-transparent hover:border-zinc-800 p-6 sm:p-8 rounded-3xl transition my-auto">
-          <input type="file" id="media-file-input" class="hidden" accept="image/*,video/*">
-          
-          <div class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center text-zinc-400 opacity-90">
-            <svg class="w-10 h-10 fill-current" viewBox="0 0 24 24">
-              <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 14a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2zm8-6a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2 2 2 0 0 1 2-2h2zm-14 0a2 2 0 0 1 2 2 2 2 0 0 1-2 2H4a2 2 0 0 1-2-2 2 2 0 0 1 2-2h2zm11.657-4.243a2 2 0 0 1 0 2.828l-1.414 1.415a2 2 0 0 1-2.829-2.829l1.415-1.414a2 2 0 0 1 2.828 0zm-11.314 11.314a2 2 0 0 1 0 2.829l-1.414 1.414a2 2 0 0 1-2.829-2.828l1.415-1.415a2 2 0 0 1 2.828 0zm11.314 0a2 2 0 0 1 2.828 0l1.415 1.415a2 2 0 0 1-2.829 2.828l-1.414-1.414a2 2 0 0 1 0-2.829zm-11.314-11.314a2 2 0 0 1 2.829 0l1.414 1.414a2 2 0 0 1-2.828 2.829l-1.415-1.415a2 2 0 0 1 0-2.828zM12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
-            </svg>
-          </div>
-          <p data-i18n="empty_canvas_title" class="text-sm font-light text-zinc-300 tracking-wide">Start creating or drop media</p>
-          <p data-i18n="empty_canvas_subtitle" class="text-[11px] text-zinc-500">Click or drag image for image-to-video</p>
-        </div>
-
-        <div id="asset-pill" class="hidden items-center space-x-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-full mb-3 shrink-0">
-          <i data-lucide="image" class="w-3.5 h-3.5 text-blue-400"></i>
-          <span id="asset-name" class="text-xs text-zinc-300 max-w-xs truncate font-mono">image.png</span>
-          <button onclick="removeAttachedAsset()" class="text-zinc-500 hover:text-white ml-1">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-
-        <!-- ================= PREVIEW CARD (FAST RESPONSIVE PERCENTAGE) ================= -->
-        <div id="result-view" class="hidden w-full max-w-2xl flex flex-col items-center space-y-4 my-auto">
-          <div id="output-box" class="w-full aspect-video bg-flowCard rounded-2xl border border-flowBorder overflow-hidden relative flex flex-col items-center justify-center shadow-2xl p-4 transition-all duration-500">
-            
-            <div id="scan-effect" class="scan-beam hidden"></div>
-
-            <!-- Video Player -->
-            <video id="output-video" controls autoplay loop playsinline class="w-full h-full object-contain hidden rounded-xl"></video>
-            
-            <!-- Fast Percentage Counter State -->
-            <div id="loading-spinner" class="hidden flex flex-col items-center justify-center space-y-3.5 text-center px-4 relative z-10 py-4">
-              
-              <!-- Circular Progress Gauge -->
-              <div class="relative flex items-center justify-center">
-                <svg class="w-24 h-24 transform -rotate-90">
-                  <circle cx="48" cy="48" r="40" stroke="currentColor" stroke-width="4" class="text-zinc-800" fill="transparent" />
-                  <circle id="progress-circle" cx="48" cy="48" r="40" stroke="currentColor" stroke-width="4" class="text-blue-500 transition-all duration-150 ease-out" fill="transparent" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" />
-                </svg>
-                <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span id="progress-percent" class="text-2xl font-bold font-mono text-white tracking-tight">1%</span>
-                </div>
-              </div>
-
-              <!-- Label and Dynamic Status -->
-              <div class="space-y-1">
-                <p data-i18n="generating_label" class="text-xs uppercase tracking-widest text-zinc-400 font-semibold">Generating Video</p>
-                <p id="progress-stage-text" class="text-[11px] text-zinc-500 font-mono">Initializing neural pipeline...</p>
-              </div>
-
-              <!-- Progress Bar Strip -->
-              <div class="w-52 sm:w-64 h-1.5 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50">
-                <div id="progress-bar-fill" class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-150 ease-out" style="width: 1%;"></div>
-              </div>
-            </div>
-
-            <!-- Generate Failed Card -->
-            <div id="error-fallback-card" class="hidden flex flex-col items-center justify-center space-y-3 p-6 text-center max-w-md">
-              <div class="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-1">
-                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-              </div>
-              <h3 data-i18n="failed_title" class="text-base font-bold text-white tracking-wide">Generate Failed</h3>
-              <p data-i18n="failed_msg" class="text-xs text-zinc-400 leading-relaxed font-sans">
-                Failed to generate video. Generative pipeline encountered an error. Please retry in a moment.
-              </p>
-              <button onclick="resetCanvasState()" 
-                class="mt-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-zinc-700 flex items-center space-x-1.5 transition">
-                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                <span data-i18n="btn_try_again">Try Again</span>
-              </button>
-            </div>
-
-          </div>
-          
-          <div class="flex items-center justify-between w-full px-2">
-            <div id="output-prompt-text" class="text-xs text-zinc-400 italic max-w-md truncate"></div>
-            <a id="download-btn" href="#" target="_blank" download="generated-video.mp4" 
-              class="hidden px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-xs text-black font-semibold items-center space-x-1.5 transition shadow">
-              <i data-lucide="download" class="w-3.5 h-3.5"></i>
-              <span data-i18n="btn_download">Download</span>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <!-- VIEW 2: ALL PROJECTS (FULL MOBILE SCROLLING + DOWNLOAD & DELETE BUTTONS) -->
-      <section id="view-gallery" class="hidden flex-1 w-full h-full overflow-y-scroll overflow-x-hidden p-4 sm:p-8 min-h-0 pb-36" style="-webkit-overflow-scrolling: touch;">
-        <div class="max-w-5xl mx-auto space-y-4">
-          <div class="flex items-center justify-between border-b border-flowBorder pb-3">
-            <div>
-              <h2 data-i18n="gallery_title" class="text-base font-semibold text-white">All Projects</h2>
-              <span id="gallery-count" class="text-xs text-zinc-500 font-mono">0 projects</span>
-            </div>
-            <!-- Quick button to go back to Canvas -->
-            <button onclick="switchView('canvas')" class="px-3 py-1.5 rounded-xl bg-white text-black hover:bg-zinc-200 text-xs font-semibold flex items-center space-x-1.5 transition shadow">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-              <span data-i18n="btn_create_new">New Video</span>
-            </button>
-          </div>
-
-          <!-- Video Grid Container -->
-          <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pb-20"></div>
-        </div>
-      </section>
-
-      <!-- FLOATING PROMPT BAR -->
-      <footer id="prompt-footer-bar" class="w-full flex flex-col items-center pb-3 px-3 sm:pb-4 sm:px-6 z-30 shrink-0">
-        <div class="w-full max-w-2xl bg-[#141417] border border-flowBorder rounded-2xl p-2 sm:p-2.5 shadow-2xl flex flex-col space-y-2 relative">
-          
-          <div class="w-full px-2">
-            <textarea id="prompt-input" rows="1" data-i18n-ph="prompt_placeholder" placeholder="What do you want to create?"
-              class="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none resize-none leading-relaxed overflow-hidden py-1"></textarea>
-          </div>
-
-          <!-- Action Controls -->
-          <div class="flex items-center justify-between pt-0.5 gap-2">
-            
-            <div class="flex items-center space-x-1.5 sm:space-x-2">
-              
-              <button type="button" onclick="triggerAssetUpload()" class="p-1.5 text-zinc-400 hover:text-white hover:bg-flowHover rounded-lg transition shrink-0" title="Add Assets">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-              </button>
-
-              <!-- Dynamic Model Selector -->
-              <div class="relative shrink-0">
-                <select id="model-select" class="appearance-none bg-[#1f1f23] hover:bg-[#27272c] text-zinc-200 text-xs rounded-xl pl-2.5 pr-7 py-1.5 border border-zinc-800 focus:outline-none cursor-pointer max-w-[125px] sm:max-w-[180px] truncate">
-                  <option value="google/flow-video" selected>Google Flow Video</option>
-                  <option value="google/veo-2">Veo 2 (Fast)</option>
-                  <option value="google/imagen-video">Imagen Video Pro</option>
-                </select>
-                <i data-lucide="chevron-down" class="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"></i>
-              </div>
-
-              <!-- SPECS BUTTON & POPOVER -->
-              <div class="relative shrink-0">
-                <button type="button" id="specs-trigger-btn" onclick="toggleSpecsPopover(event)"
-                  class="px-2.5 py-1.5 rounded-xl bg-[#1f1f23] hover:bg-[#27272c] text-zinc-300 text-[10px] sm:text-[11px] border border-zinc-800 flex items-center space-x-1 cursor-pointer transition">
-                  <span id="specs-display" class="truncate max-w-[85px] sm:max-w-none">16:9 · 720p · 8s</span>
-                  <i data-lucide="sliders" class="w-3 h-3 text-zinc-400 shrink-0"></i>
-                </button>
-
-                <!-- POPOVER MENU -->
-                <div id="specs-popover" onclick="event.stopPropagation()"
-                  class="hidden absolute bottom-full mb-3 left-0 sm:left-auto right-auto w-64 bg-[#18181c] border border-flowBorder rounded-2xl shadow-2xl p-4 z-50 space-y-3.5">
-                  
-                  <div class="flex items-center justify-between pb-1.5 border-b border-zinc-800">
-                    <span data-i18n="specs_heading" class="text-xs font-semibold text-white">Video Parameters</span>
-                    <button type="button" onclick="closeSpecsPopover()" class="text-zinc-500 hover:text-white">
-                      <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                    </button>
-                  </div>
-
-                  <div>
-                    <label data-i18n="specs_ratio" class="block text-[11px] text-zinc-400 mb-1">Aspect Ratio</label>
-                    <select id="ratio-select" onchange="updateSpecsLabel()" class="w-full bg-[#101013] border border-zinc-800 rounded-lg p-1.5 text-xs text-white focus:outline-none">
-                      <option value="16:9">16:9 Landscape</option>
-                      <option value="9:16">9:16 Portrait (Reels)</option>
-                      <option value="1:1">1:1 Square</option>
-                    </select>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-2">
-                    <div>
-                      <label data-i18n="specs_res" class="block text-[11px] text-zinc-400 mb-1">Resolution</label>
-                      <select id="res-select" onchange="updateSpecsLabel()" class="w-full bg-[#101013] border border-zinc-800 rounded-lg p-1.5 text-xs text-white focus:outline-none">
-                        <option value="720p">720p HD</option>
-                        <option value="1080p">1080p FHD</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label data-i18n="specs_dur" class="block text-[11px] text-zinc-400 mb-1">Duration</label>
-                      <select id="dur-select" onchange="updateSpecsLabel()" class="w-full bg-[#101013] border border-zinc-800 rounded-lg p-1.5 text-xs text-white focus:outline-none">
-                        <option value="5s">5s</option>
-                        <option value="8s" selected>8s</option>
-                        <option value="10s">10s</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <button type="button" onclick="closeSpecsPopover()" 
-                    class="w-full py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-medium transition">
-                    <span data-i18n="btn_apply">Done</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Enter / Generate Button -->
-            <button type="button" id="generate-btn" class="w-8 h-8 rounded-full bg-white text-black hover:bg-zinc-200 transition flex items-center justify-center shrink-0 shadow">
-              <i data-lucide="arrow-right" class="w-4 h-4 stroke-[2.5]"></i>
-            </button>
-          </div>
-        </div>
-
-        <span id="site-disclaimer" class="text-[10px] text-zinc-600 mt-1.5 text-center truncate max-w-full">Google Flow can make mistakes, so double check it</span>
-      </footer>
-
-    </main>
+      <h3 class="text-base font-semibold text-white tracking-wide">Syncing Ultra Studio Engine</h3>
+      <p class="text-xs text-zinc-500 max-w-sm text-center">Connecting dedicated AI neural pipelines. Please wait a moment...</p>
+    </div>
   </div>
 
-  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <!-- ================= 1. CLIENT LOGIN SCREEN (WITH QR CODE LINKING) ================= -->
+  <div id="auth-screen" class="fixed inset-0 z-50 bg-[#050507] flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-[#111114] border border-[#1f1f24] p-7 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center relative">
+      
+      <div id="login-logo-container" class="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-white mb-2 overflow-hidden shadow">
+        <i data-lucide="sparkles" class="w-6 h-6 text-blue-400"></i>
+      </div>
+      <span id="login-site-name" class="text-xl font-bold tracking-tight text-white mb-1">Google Flow Ultra</span>
+      <p id="login-subtext" class="text-xs text-zinc-400 mb-5 text-center">Sign in to launch your dedicated studio</p>
+
+      <!-- VIEW A: EMAIL / PASSWORD LOGIN -->
+      <form id="login-form" class="w-full space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Gmail / Email</label>
+          <input type="email" id="login-email" required placeholder="client@gmail.com"
+            class="w-full bg-[#0a0a0c] border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-zinc-400 mb-1">Password</label>
+          <div class="relative">
+            <input type="password" id="login-password" required placeholder="••••••••"
+              class="w-full bg-[#0a0a0c] border border-zinc-800 rounded-xl px-3.5 py-2.5 pr-10 text-sm text-white focus:outline-none focus:border-zinc-500">
+            <button type="button" onclick="togglePassVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white">
+              <i id="eye-icon" data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="login-error" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-900/50 p-2.5 rounded-xl text-center leading-relaxed"></div>
+
+        <button type="submit"
+          class="w-full py-2.5 bg-white text-black font-semibold text-sm rounded-xl hover:bg-zinc-200 transition-all flex items-center justify-center space-x-2 shadow-lg">
+          <span>Launch Google Flow Ultra →</span>
+        </button>
+
+        <div class="relative my-3 flex items-center justify-center">
+          <div class="border-t border-zinc-800 w-full"></div>
+          <span class="bg-[#111114] px-3 text-[10px] text-zinc-500 uppercase tracking-wider font-mono absolute">OR</span>
+        </div>
+
+        <button type="button" onclick="showQrLoginView()"
+          class="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 font-medium text-xs rounded-xl transition flex items-center justify-center space-x-2">
+          <i data-lucide="qr-code" class="w-4 h-4 text-emerald-400"></i>
+          <span>Link 2nd Device with QR Code</span>
+        </button>
+      </form>
+
+      <!-- VIEW B: WHATSAPP-STYLE QR CODE PAIRING VIEW -->
+      <div id="qr-login-container" class="hidden w-full flex-col items-center space-y-4">
+        <div class="p-3 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+          <div id="qrcode-box" class="w-[180px] h-[180px] flex items-center justify-center"></div>
+        </div>
+
+        <div class="text-center space-y-1">
+          <p class="text-xs font-medium text-white">১ম ডিভাইস থেকে স্ক্যান করুন</p>
+          <p class="text-[11px] text-zinc-400 leading-normal">যে ডিভাইসে অ্যাকাউন্ট লগইন আছে, তার ডকের <b>Devices</b> মেনু থেকে স্ক্যান করুন।</p>
+        </div>
+
+        <div class="flex items-center space-x-2 text-[11px] text-emerald-400 bg-emerald-950/40 border border-emerald-900/50 px-3 py-1.5 rounded-xl">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Waiting for QR Scan...</span>
+        </div>
+
+        <button type="button" onclick="hideQrLoginView()" class="text-xs text-zinc-400 hover:text-white underline pt-1">
+          ← ইমেইল পাসওয়ার্ড দিয়ে লগইন করুন
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= 2. LIVE STUDIO VIEW ================= -->
+  <div id="main-studio" class="hidden relative w-full h-full flex flex-col bg-black">
+
+    <div class="stream-container">
+      <iframe id="live-stream-frame" src="about:blank" allow="autoplay"></iframe>
+      
+      <div id="frame-loader" class="absolute inset-0 bg-black flex flex-col items-center justify-center space-y-3 z-10">
+        <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-xs text-zinc-400 font-mono tracking-wide">Connecting to Google Flow Ultra Engine...</p>
+      </div>
+    </div>
+
+    <!-- ================= 3. DRAGGABLE & RE-EXPANDABLE DOCK ================= -->
+    <div id="dock-wrapper" style="position: fixed; bottom: 24px; left: 24px; z-index: 1000;">
+      
+      <div id="dock-expanded" class="glass-pill rounded-full px-2.5 py-1.5 flex items-center space-x-2 text-xs">
+        
+        <div class="drag-handle" title="Drag Anywhere">
+          <i data-lucide="grip-vertical" class="w-4 h-4 text-zinc-500"></i>
+        </div>
+
+        <div class="flex items-center space-x-1.5 px-2 py-1 rounded-full bg-black/60 text-emerald-400 text-[11px] font-semibold border border-emerald-500/20 shrink-0">
+          <span id="dock-icon-box" class="w-3.5 h-3.5 flex items-center justify-center">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </span>
+          <span>Ultra</span>
+        </div>
+
+        <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-200 font-medium shrink-0">
+          <i data-lucide="cpu" class="w-3 h-3 text-purple-400"></i>
+          <span id="dock-model-name">Veo 3.1 - Lite</span>
+        </div>
+
+        <div class="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-amber-300 font-medium shrink-0">
+          <span>💎</span>
+          <span id="dock-credits">5000 Cr</span>
+        </div>
+
+        <div class="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 font-medium shrink-0">
+          <span>⏳</span>
+          <span id="dock-expiry">30d Left</span>
+        </div>
+
+        <!-- 2-DEVICE MANAGER & SCANNER BUTTON -->
+        <button type="button" onclick="openDeviceManagerModal()" 
+          class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-blue-950/60 hover:bg-blue-900/80 border border-blue-800 text-[11px] text-blue-300 font-medium transition shrink-0" 
+          title="Manage Linked Devices">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span id="dock-device-count">Devices (1/2)</span>
+        </button>
+
+        <a id="btn-local-download" href="#" target="_blank" download="google-flow-video.mp4" 
+          class="hidden items-center space-x-1 px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-[11px] font-bold shadow-lg transition shrink-0">
+          <i data-lucide="download" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+          <span>Download (PC)</span>
+        </a>
+
+        <button type="button" onclick="reloadStreamFrame()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Reload Engine">
+          <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <button type="button" onclick="collapseDock()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Minimize Pill">
+          <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <button type="button" onclick="logoutClient()" class="p-1 text-zinc-400 hover:text-red-400 rounded-md hover:bg-zinc-800 transition shrink-0" title="Exit">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <div id="dock-collapsed" style="display: none;" class="glass-pill w-11 h-11 rounded-full items-center justify-center cursor-pointer border border-emerald-500/40 hover:scale-105 transition shadow-2xl relative" title="Click to open">
+        <span id="collapsed-logo-box" class="w-6 h-6 flex items-center justify-center pointer-events-none">
+          <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ================= 4. DEVICE MANAGER & QR SCANNER MODAL ================= -->
+  <div id="device-modal" class="fixed inset-0 z-[999999] bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="w-full max-w-md bg-[#151519] border border-[#27272f] p-6 rounded-3xl shadow-2xl space-y-5">
+      
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Linked Devices (সর্বোচ্চ ২টি)</h3>
+            <p class="text-[11px] text-zinc-400">একটি অ্যাকাউন্ট একই সাথে ২টি ডিভাইসে চলবে</p>
+          </div>
+        </div>
+        <button onclick="closeDeviceManagerModal()" class="text-zinc-500 hover:text-white p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- ACTIVE DEVICES LIST -->
+      <div id="devices-list" class="space-y-2"></div>
+
+      <!-- CAMERA SCANNER VIEW -->
+      <div id="scanner-wrapper" class="hidden flex-col items-center space-y-3 bg-black border border-zinc-800 rounded-2xl p-4">
+        <div id="qr-reader" class="w-full max-w-[280px] overflow-hidden rounded-xl"></div>
+        <p class="text-[11px] text-zinc-400 text-center">২য় ডিভাইসের স্ক্রিনের কিউআর কোডের সামনে ক্যামেরা ধরুন</p>
+        <button type="button" onclick="stopQrScanner()" class="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-xs rounded-xl text-zinc-300">
+          বন্ধ করুন
+        </button>
+      </div>
+
+      <!-- LINK NEW DEVICE BUTTON -->
+      <button id="btn-open-scanner" onclick="startQrScanner()" 
+        class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs rounded-xl transition flex items-center justify-center space-x-2 shadow-lg">
+        <i data-lucide="camera" class="w-4 h-4"></i>
+        <span>Scan QR to Link 2nd Device</span>
+      </button>
+
+    </div>
+  </div>
+
   <script>
-    // 1. FIREBASE CONFIGURATION
+    // ================= SECURITY: DISABLE RIGHT CLICK & INSPECT SHORTCUTS =================
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
+        (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's'))
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    });
+
     const firebaseConfig = {
       apiKey: "AIzaSyDdtiWw6gzYFqSyuq2-ufFzmJ1PZyL2bCE",
       authDomain: "flow-studio-a283b.firebaseapp.com",
@@ -439,582 +313,574 @@
       measurementId: "G-CT21P2M6XY"
     };
 
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 2. INTERNATIONALIZATION (EN / BN)
-    const translations = {
-      en: {
-        login_subtitle: "Login with your assigned credentials",
-        email_label: "Gmail / Email",
-        password_label: "Password",
-        btn_login: "Sign In",
-        login_footer_note: "Contact administrator to get an account or assign API keys.",
-        nav_studio: "Studio Canvas",
-        nav_all_media: "All Projects / Media",
-        nav_characters: "Characters",
-        nav_scenes: "Scenes",
-        nav_clear_history: "Clear History",
-        nav_collapse: "Collapse",
-        search_placeholder: "Search prompts or media",
-        btn_logout: "Logout",
-        empty_canvas_title: "Start creating or drop media",
-        empty_canvas_subtitle: "Click or drag image for image-to-video",
-        prompt_placeholder: "What do you want to create?",
-        specs_heading: "Video Parameters",
-        specs_ratio: "Aspect Ratio",
-        specs_res: "Resolution",
-        specs_dur: "Duration",
-        btn_apply: "Done",
-        btn_download: "Download",
-        gallery_title: "All Projects",
-        generating_label: "Generating Video",
-        failed_title: "Generate Failed",
-        failed_msg: "Failed to generate video. Generative pipeline encountered an error. Please retry in a moment.",
-        btn_try_again: "Try Again",
-        btn_create_new: "New Video"
-      },
-      bn: {
-        login_subtitle: "আপনার জন্য নির্ধারিত তথ্য দিয়ে লগইন করুন",
-        email_label: "জিমেইল / ইমেইল",
-        password_label: "পাসওয়ার্ড",
-        btn_login: "লগইন করুন",
-        login_footer_note: "অ্যাকাউন্ট তৈরি বা এপিআই কানেকশনের জন্য অ্যাডমিনের সাথে যোগাযোগ করুন।",
-        nav_studio: "স্টুডিও ক্যানভাস",
-        nav_all_media: "অল প্রজেক্টস / মিডিয়া",
-        nav_characters: "ক্যারেক্টার",
-        nav_scenes: "সিন্স",
-        nav_clear_history: "হিস্ট্রি মুছুন",
-        nav_collapse: "কলাপ্স",
-        search_placeholder: "প্রম্পট বা মিডিয়া খুঁজুন",
-        btn_logout: "লগআউট",
-        empty_canvas_title: "নতুন কিছু তৈরি করতে প্রম্পট লিখুন",
-        empty_canvas_subtitle: "ছবি থেকে ভিডিও বানাতে ছবি ড্রপ করুন",
-        prompt_placeholder: "আপনি কী তৈরি করতে চান?",
-        specs_heading: "ভিডিও কনফিগারেশন",
-        specs_ratio: "অ্যাসপেক্ট রেশিও",
-        specs_res: "রেজোলিউশন",
-        specs_dur: "সময়কাল (Duration)",
-        btn_apply: "প্রয়োগ করুন",
-        btn_download: "ডাউনলোড",
-        gallery_title: "পূর্বের সকল প্রজেক্ট",
-        generating_label: "ভিডিও তৈরি হচ্ছে",
-        failed_title: "ভিডিও তৈরি ব্যর্থ হয়েছে",
-        failed_msg: "ভিডিও তৈরি করতে সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।",
-        btn_try_again: "আবার চেষ্টা করুন",
-        btn_create_new: "নতুন ভিডিও"
-      }
-    };
+    function renderIcons() { if (window.lucide) lucide.createIcons(); }
 
-    let currentLang = localStorage.getItem('flow_lang') || 'en';
-
-    function setLanguage(lang) {
-      currentLang = lang;
-      localStorage.setItem('flow_lang', lang);
-      document.querySelectorAll('.lang-label').forEach(el => el.textContent = lang === 'en' ? 'BN' : 'EN');
-
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[lang][key]) el.textContent = translations[lang][key];
-      });
-
-      document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-        const key = el.getAttribute('data-i18n-ph');
-        if (translations[lang][key]) el.placeholder = translations[lang][key];
-      });
+    // PERSISTENT UNIQUE DEVICE IDENTIFIER
+    let myDeviceId = localStorage.getItem('flow_device_id');
+    if (!myDeviceId) {
+      myDeviceId = 'dev_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+      localStorage.setItem('flow_device_id', myDeviceId);
     }
 
-    function toggleLanguage() {
-      setLanguage(currentLang === 'en' ? 'bn' : 'en');
-    }
-
-    function renderIcons() {
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function togglePasswordVisibility(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon = document.getElementById(iconId);
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.setAttribute('data-lucide', 'eye-off');
+    function togglePassVisibility() {
+      const p = document.getElementById('login-password');
+      const eye = document.getElementById('eye-icon');
+      if (p.type === 'password') {
+        p.type = 'text';
+        eye.setAttribute('data-lucide', 'eye-off');
       } else {
-        input.type = 'password';
-        icon.setAttribute('data-lucide', 'eye');
+        p.type = 'password';
+        eye.setAttribute('data-lucide', 'eye');
       }
       renderIcons();
     }
 
-    // 3. SPECS POPOVER
-    const specsPopover = document.getElementById('specs-popover');
-    function toggleSpecsPopover(e) {
-      if (e) {
-        e.stopPropagation();
-      }
-      specsPopover.classList.toggle('hidden');
+    // 1. MAINTENANCE LISTENER
+    function listenToMaintenance() {
+      db.collection('settings').doc('maintenance').onSnapshot(doc => {
+        if (doc.exists) {
+          const m = doc.data();
+          const screen = document.getElementById('maintenance-screen');
+          if (m.active === true) {
+            document.getElementById('maint-title').textContent = m.title || "সার্ভার রক্ষণাবেক্ষণ চলছে";
+            document.getElementById('maint-desc').textContent = m.message || "আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।";
+            document.getElementById('maint-duration').textContent = m.duration || "শীঘ্রই চালু হবে";
+            screen.classList.remove('hidden');
+            screen.classList.add('flex');
+            document.getElementById('live-stream-frame').src = 'about:blank';
+          } else {
+            screen.classList.add('hidden');
+            screen.classList.remove('flex');
+            if (currentSessionUser && !isPrivacyActive) reloadStreamFrame();
+          }
+        }
+      });
     }
+    listenToMaintenance();
 
-    function closeSpecsPopover() {
-      specsPopover.classList.add('hidden');
+    // 2. REAL-TIME BULLETPROOF PRIVACY SHIELD
+    let isPrivacyActive = false;
+    function listenToAdminPrivacy() {
+      db.collection('settings').doc('admin_privacy').onSnapshot(doc => {
+        const privScreen = document.getElementById('admin-privacy-screen');
+        const streamFrame = document.getElementById('live-stream-frame');
+        
+        const active = doc.exists && doc.data().active === true;
+        isPrivacyActive = active;
+
+        if (active) {
+          privScreen.style.setProperty('display', 'flex', 'important');
+          if (streamFrame.src !== 'about:blank') {
+            streamFrame.src = 'about:blank';
+          }
+        } else {
+          privScreen.style.setProperty('display', 'none', 'important');
+          if (currentSessionUser && !document.getElementById('main-studio').classList.contains('hidden')) {
+            if (streamFrame.src === 'about:blank' || streamFrame.src.includes('about:blank')) {
+              reloadStreamFrame();
+            }
+          }
+        }
+      });
     }
+    listenToAdminPrivacy();
 
-    document.addEventListener('click', (e) => {
-      const trigger = document.getElementById('specs-trigger-btn');
-      if (specsPopover && trigger && !specsPopover.contains(e.target) && !trigger.contains(e.target)) {
-        specsPopover.classList.add('hidden');
-      }
-    });
-
-    function updateSpecsLabel() {
-      const r = document.getElementById('ratio-select').value;
-      const q = document.getElementById('res-select').value;
-      const d = document.getElementById('dur-select').value;
-      document.getElementById('specs-display').textContent = `${r} · ${q} · ${d}`;
+    // 3. REALTIME VIDEO DOWNLOAD LISTENER
+    function listenToGeneratedVideos() {
+      db.collection('settings').doc('latest_video').onSnapshot(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          const downloadBtn = document.getElementById('btn-local-download');
+          if (data.url) {
+            downloadBtn.href = data.url;
+            downloadBtn.classList.remove('hidden');
+            downloadBtn.classList.add('flex');
+            renderIcons();
+          }
+        }
+      });
     }
+    listenToGeneratedVideos();
 
-    // 4. MOBILE DRAWER
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('mobile-backdrop');
-    function toggleMobileSidebar() {
-      sidebar.classList.toggle('-translate-x-full');
-      backdrop.classList.toggle('hidden');
-    }
-    backdrop.addEventListener('click', toggleMobileSidebar);
-
-    // 5. FIRESTORE REAL-TIME SYNC
+    let globalStreamUrl = 'http://15.235.246.137:3000';
     function listenToSiteConfig() {
-      db.collection('settings').doc('site_config').onSnapshot((doc) => {
+      db.collection('settings').doc('site_config').onSnapshot(doc => {
         if (doc.exists) {
           const cfg = doc.data();
+          if (cfg.streamUrl) globalStreamUrl = cfg.streamUrl.trim();
           if (cfg.siteName) {
             document.getElementById('page-title').textContent = cfg.siteName;
             document.getElementById('login-site-name').textContent = cfg.siteName;
-            document.getElementById('app-site-name').textContent = cfg.siteName;
           }
-          if (cfg.disclaimer) {
-            document.getElementById('site-disclaimer').textContent = cfg.disclaimer;
-          }
-          if (cfg.logoUrl) {
-            const logo = `<img src="${cfg.logoUrl}" class="w-full h-full object-contain rounded" alt="Logo">`;
-            document.getElementById('login-logo-box').innerHTML = logo;
-            document.getElementById('app-logo-box').innerHTML = logo;
+          if (cfg.dockLogoUrl) {
+            const logoImg = `<img src="${cfg.dockLogoUrl}" class="w-full h-full object-contain rounded-full pointer-events-none" alt="Logo">`;
+            document.getElementById('dock-icon-box').innerHTML = logoImg;
+            document.getElementById('collapsed-logo-box').innerHTML = logoImg;
+            document.getElementById('login-logo-container').innerHTML = `<img src="${cfg.dockLogoUrl}" class="w-full h-full object-contain p-2" alt="Logo">`;
           }
         }
-      }, err => console.warn(err));
+      });
     }
-
-    function listenToActiveModels() {
-      db.collection('models').onSnapshot((snapshot) => {
-        if (!snapshot.empty) {
-          const sel = document.getElementById('model-select');
-          sel.innerHTML = '';
-          let count = 0;
-          snapshot.forEach((doc) => {
-            const m = doc.data();
-            if (m.active !== false && m.id) {
-              const opt = document.createElement('option');
-              opt.value = m.id.trim();
-              opt.textContent = m.name || m.id;
-              if (count === 0) opt.selected = true;
-              sel.appendChild(opt);
-              count++;
-            }
-          });
-        }
-      }, err => console.warn("Models load:", err));
-    }
-
     listenToSiteConfig();
-    listenToActiveModels();
 
-    // 6. CLIENT AUTHENTICATION WITH SESSION PERSISTENCE
     let currentSessionUser = null;
-    let attachedAsset = null;
-
-    const loginForm = document.getElementById('login-form');
-    const loginError = document.getElementById('login-error');
+    let userDocUnsubscribe = null;
     const authScreen = document.getElementById('auth-screen');
-    const mainApp = document.getElementById('main-app');
+    const mainStudio = document.getElementById('main-studio');
+    const streamFrame = document.getElementById('live-stream-frame');
+    const frameLoader = document.getElementById('frame-loader');
 
     async function checkSavedSession() {
-      const savedUserId = localStorage.getItem('flow_active_uid');
-      if (savedUserId) {
+      const uid = localStorage.getItem('flow_active_uid');
+      if (uid) {
         try {
-          const doc = await db.collection('users').doc(savedUserId).get();
-          if (doc.exists && doc.data().active !== false) {
-            startUserSession({ id: doc.id, ...doc.data() });
-          } else {
-            localStorage.removeItem('flow_active_uid');
+          const doc = await db.collection('users').doc(uid).get();
+          if (doc.exists) {
+            const data = { id: doc.id, ...doc.data() };
+            // Ensure this device is still authorized in the active devices list
+            const devices = data.activeDevices || [];
+            const isAuthorized = devices.some(d => d.id === myDeviceId);
+
+            if (isAuthorized && validateUserStatus(data)) {
+              startStudio(data);
+              return;
+            }
           }
-        } catch (e) {
-          console.error("Session restoration error:", e);
-        }
+        } catch(e) {}
+        localStorage.removeItem('flow_active_uid');
       }
     }
 
-    function startUserSession(userData) {
-      currentSessionUser = userData;
-      localStorage.setItem('flow_active_uid', userData.id);
-
-      authScreen.classList.add('hidden');
-      mainApp.classList.remove('hidden');
-
-      document.getElementById('user-display-email').textContent = userData.email;
-      document.getElementById('user-avatar').textContent = (userData.email || 'U').charAt(0).toUpperCase();
-
-      listenToUserGenerations();
-      renderIcons();
+    function calculateRemainingDays(expiryStr) {
+      if (!expiryStr) return 'Lifetime';
+      const expiry = new Date(expiryStr);
+      const diffTime = expiry - new Date();
+      if (diffTime <= 0) return 'Expired';
+      return `${Math.ceil(diffTime / (1000 * 60 * 60 * 24))}d Left`;
     }
 
-    loginForm.addEventListener('submit', async (e) => {
+    function validateUserStatus(user) {
+      const err = document.getElementById('login-error');
+      if (user.active === false) {
+        err.textContent = "আপনার অ্যাকাউন্টটি সাময়িক স্থগিত রয়েছে।";
+        err.classList.remove('hidden');
+        return false;
+      }
+      if (user.expiryDate && new Date(user.expiryDate) < new Date()) {
+        err.textContent = "আপনার অ্যাকাউন্টের মেয়াদ শেষ হয়ে গেছে। অ্যাডমিনের সাথে যোগাযোগ করুন।";
+        err.classList.remove('hidden');
+        return false;
+      }
+      return true;
+    }
+
+    // ================= EMAIL / PASSWORD LOGIN (WITH 2-DEVICE ENFORCEMENT) =================
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      loginError.classList.add('hidden');
+      const err = document.getElementById('login-error');
+      err.classList.add('hidden');
       const email = document.getElementById('login-email').value.trim().toLowerCase();
       const password = document.getElementById('login-password').value;
 
       try {
-        const querySnap = await db.collection('users').where('email', '==', email).get();
-        if (querySnap.empty) {
-          loginError.textContent = currentLang === 'en' ? "Account not found. Contact administrator." : "অ্যাকাউন্ট পাওয়া যায়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।";
-          loginError.classList.remove('hidden');
+        const snap = await db.collection('users').where('email', '==', email).get();
+        if (snap.empty) {
+          err.textContent = "অ্যাকাউন্ট পাওয়া যায়নি!";
+          err.classList.remove('hidden');
           return;
         }
-
         let userFound = null;
-        querySnap.forEach(doc => { userFound = { id: doc.id, ...doc.data() }; });
+        snap.forEach(d => userFound = { id: d.id, ...d.data() });
 
         if (userFound.password !== password) {
-          loginError.textContent = currentLang === 'en' ? "Incorrect password provided." : "ভুল পাসওয়ার্ড দেওয়া হয়েছে।";
-          loginError.classList.remove('hidden');
+          err.textContent = "ভুল পাসওয়ার্ড দেওয়া হয়েছে!";
+          err.classList.remove('hidden');
           return;
         }
 
-        if (userFound.active === false) {
-          loginError.textContent = currentLang === 'en' ? "Your account is currently suspended." : "আপনার অ্যাকাউন্টটি সাময়িক স্থগিত রয়েছে।";
-          loginError.classList.remove('hidden');
-          return;
-        }
+        if (!validateUserStatus(userFound)) return;
 
-        startUserSession(userFound);
+        // 2-DEVICE LIMIT CHECK
+        let devices = userFound.activeDevices || [];
+        const isAlreadyLinked = devices.some(d => d.id === myDeviceId);
 
-      } catch (err) {
-        console.error(err);
-        loginError.textContent = "Firebase error: " + err.message;
-        loginError.classList.remove('hidden');
-      }
-    });
-
-    document.getElementById('logout-btn').addEventListener('click', () => {
-      localStorage.removeItem('flow_active_uid');
-      currentSessionUser = null;
-      mainApp.classList.add('hidden');
-      authScreen.classList.remove('hidden');
-    });
-
-    // 7. FILE ATTACHMENT
-    const fileInput = document.getElementById('media-file-input');
-    document.getElementById('dropzone').addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      attachedAsset = file.name;
-      document.getElementById('asset-name').textContent = file.name;
-      document.getElementById('asset-pill').classList.remove('hidden');
-      document.getElementById('asset-pill').classList.add('flex');
-      renderIcons();
-    });
-
-    function triggerAssetUpload() { fileInput.click(); }
-    function removeAttachedAsset() {
-      attachedAsset = null;
-      fileInput.value = '';
-      document.getElementById('asset-pill').classList.add('hidden');
-      document.getElementById('asset-pill').classList.remove('flex');
-    }
-
-    function resetCanvasState() {
-      if (progressInterval) clearInterval(progressInterval);
-      document.getElementById('result-view').classList.add('hidden');
-      document.getElementById('dropzone').classList.remove('hidden');
-      document.getElementById('output-box').classList.remove('flow-glow-active');
-      document.getElementById('scan-effect').classList.add('hidden');
-      document.getElementById('loading-spinner').classList.add('hidden');
-      document.getElementById('error-fallback-card').classList.add('hidden');
-      generateBtn.disabled = false;
-    }
-
-    // ================= 8. FAST PERCENTAGE PROGRESS (ENHANCED SPEED) =================
-    const generateBtn = document.getElementById('generate-btn');
-    const promptInput = document.getElementById('prompt-input');
-    const resultView = document.getElementById('result-view');
-    const emptyDropzone = document.getElementById('dropzone');
-    const loadingSpinner = document.getElementById('loading-spinner');
-    const outputVideo = document.getElementById('output-video');
-    const downloadBtn = document.getElementById('download-btn');
-    const outputPromptText = document.getElementById('output-prompt-text');
-    const outputBox = document.getElementById('output-box');
-    const scanEffect = document.getElementById('scan-effect');
-    const errorFallbackCard = document.getElementById('error-fallback-card');
-
-    const progressPercent = document.getElementById('progress-percent');
-    const progressBarFill = document.getElementById('progress-bar-fill');
-    const progressCircle = document.getElementById('progress-circle');
-    const progressStageText = document.getElementById('progress-stage-text');
-
-    let progressInterval = null;
-    let currentPercentage = 1;
-
-    function setPercentageProgress(val) {
-      currentPercentage = Math.min(100, Math.max(1, Math.round(val)));
-      progressPercent.textContent = `${currentPercentage}%`;
-      progressBarFill.style.width = `${currentPercentage}%`;
-
-      // Circular gauge formula (circumference: 251.2)
-      const offset = 251.2 - (251.2 * currentPercentage / 100);
-      progressCircle.style.strokeDashoffset = offset;
-    }
-
-    // FAST & DYNAMIC PROGRESS COUNTER
-    function startProgressCounter() {
-      setPercentageProgress(1);
-      progressStageText.textContent = "Connecting to dedicated neural cluster...";
-      if (progressInterval) clearInterval(progressInterval);
-
-      // প্রতি ১৮০ms পরপর দ্রুত ও মসৃণভাবে স্পিড আপ হবে
-      progressInterval = setInterval(() => {
-        if (currentPercentage < 98) {
-          if (currentPercentage < 35) {
-            currentPercentage += 3; // ১ম ধাপে দ্রুত ৩৫% এ পৌঁছাবে
-            progressStageText.textContent = "Allocating neural tensors...";
-          } else if (currentPercentage < 72) {
-            currentPercentage += 2; // ২য় ধাপে মসৃণ গতিতে ৭২% হবে
-            progressStageText.textContent = "Synthesizing temporal latent vectors...";
-          } else if (currentPercentage < 92) {
-            currentPercentage += 1; // ৩য় ধাপে ৯২% এ যাবে
-            progressStageText.textContent = "Rendering high-definition video frames...";
-          } else {
-            currentPercentage += 0.4; // ফিনিশিং টাচে সাবধানে এগোবে
-            progressStageText.textContent = "Finalizing stream encoding...";
-          }
-          setPercentageProgress(currentPercentage);
-        }
-      }, 180);
-    }
-
-    generateBtn.addEventListener('click', async () => {
-      const prompt = promptInput.value.trim();
-      const selectedModelId = (document.getElementById('model-select').value || 'google/flow-video').trim();
-      
-      if (!prompt) {
-        alert(currentLang === 'en' ? "Please enter a prompt first!" : "অনুগ্রহ করে একটি প্রম্পট লিখুন!");
-        return;
-      }
-
-      if (!currentSessionUser) {
-        alert("Session expired. Please log in again.");
-        return;
-      }
-
-      // UI Initializing
-      emptyDropzone.classList.add('hidden');
-      resultView.classList.remove('hidden');
-      loadingSpinner.classList.remove('hidden');
-      errorFallbackCard.classList.add('hidden');
-      outputVideo.classList.add('hidden');
-      downloadBtn.classList.add('hidden');
-      outputBox.classList.add('flow-glow-active');
-      scanEffect.classList.remove('hidden');
-
-      outputPromptText.textContent = `"${prompt}"`;
-      generateBtn.disabled = true;
-
-      // Start Fast Progress Counter
-      startProgressCounter();
-
-      try {
-        const taskRef = await db.collection('video_tasks').add({
-          userId: currentSessionUser.id,
-          userEmail: currentSessionUser.email,
-          googleAccount: currentSessionUser.googleAccount || 'Dedicated Pro Account',
-          prompt: prompt,
-          model: selectedModelId,
-          specs: document.getElementById('specs-display').textContent,
-          status: 'pending',
-          stage: 'Queued for dedicated worker...',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        const unsubscribe = taskRef.onSnapshot((doc) => {
-          const task = doc.data();
-          if (!task) return;
-
-          // SUCCESS CASE (100% Instant Jump)
-          if (task.status === 'completed' && task.videoUrl) {
-            if (progressInterval) clearInterval(progressInterval);
-            setPercentageProgress(100);
-            progressStageText.textContent = "Complete!";
-
-            setTimeout(() => {
-              outputBox.classList.remove('flow-glow-active');
-              scanEffect.classList.add('hidden');
-              loadingSpinner.classList.add('hidden');
-
-              outputVideo.src = task.videoUrl;
-              outputVideo.classList.remove('hidden');
-              outputVideo.play();
-
-              downloadBtn.href = task.videoUrl;
-              downloadBtn.classList.remove('hidden');
-              downloadBtn.classList.add('flex');
-              generateBtn.disabled = false;
-
-              saveGenerationHistory(prompt, selectedModelId, task.videoUrl);
-              unsubscribe();
-            }, 300);
-
-          // FAILURE CASE (Generate Failed)
-          } else if (task.status === 'failed') {
-            if (progressInterval) clearInterval(progressInterval);
-            outputBox.classList.remove('flow-glow-active');
-            scanEffect.classList.add('hidden');
-            loadingSpinner.classList.add('hidden');
-            errorFallbackCard.classList.remove('hidden');
-            generateBtn.disabled = false;
-            unsubscribe();
-          }
-        });
-
-      } catch (err) {
-        if (progressInterval) clearInterval(progressInterval);
-        outputBox.classList.remove('flow-glow-active');
-        scanEffect.classList.add('hidden');
-        loadingSpinner.classList.add('hidden');
-        errorFallbackCard.classList.remove('hidden');
-        generateBtn.disabled = false;
-      }
-    });
-
-    function saveGenerationHistory(prompt, model, videoUrl) {
-      const newGen = {
-        userEmail: currentSessionUser.email,
-        prompt: prompt,
-        model: model,
-        videoUrl: videoUrl,
-        specs: document.getElementById('specs-display').textContent,
-        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      db.collection('generations').add(newGen).catch(e => console.warn(e));
-    }
-
-    // ================= 9. ALL PROJECTS (FIXED SCROLL & RESTORED BUTTONS) =================
-    function listenToUserGenerations() {
-      if (!currentSessionUser) return;
-      db.collection('generations')
-        .where('userEmail', '==', currentSessionUser.email)
-        .onSnapshot((snapshot) => {
-          const grid = document.getElementById('gallery-grid');
-          document.getElementById('gallery-count').textContent = `${snapshot.size} projects`;
-          grid.innerHTML = '';
-
-          if (snapshot.empty) {
-            grid.innerHTML = `<div class="col-span-full text-center py-16 text-xs text-zinc-500">No projects generated yet.</div>`;
+        if (!isAlreadyLinked) {
+          if (devices.length >= 2) {
+            err.innerHTML = `⚠️ <b>লগইন লিমিট পূর্ণ!</b> এই অ্যাকাউন্টটি ইতিমধ্যে ২টি ডিভাইসে চালু আছে। আগের কোনো ডিভাইস থেকে লগআউট করুন অথবা কিউআর কোড দিয়ে লিঙ্ক করুন।`;
+            err.classList.remove('hidden');
             return;
           }
-
-          snapshot.forEach((doc) => {
-            const item = doc.data();
-            const itemId = doc.id;
-            const card = document.createElement('div');
-            card.className = "bg-flowCard border border-flowBorder rounded-2xl overflow-hidden p-3 space-y-3 shadow-xl flex flex-col justify-between";
-            
-            card.innerHTML = `
-              <div class="space-y-2.5">
-                <div class="aspect-video bg-black/90 rounded-xl overflow-hidden relative">
-                  <video src="${item.videoUrl}" controls playsinline preload="metadata" class="w-full h-full object-cover"></video>
-                </div>
-                <p class="text-xs text-zinc-200 line-clamp-2 italic px-1 font-sans" title="${item.prompt}">
-                  "${item.prompt}"
-                </p>
-              </div>
-
-              <!-- Action Bar with Download & Delete Buttons -->
-              <div class="px-1 flex items-center justify-between border-t border-zinc-800/80 pt-2.5 text-[11px] text-zinc-500 font-mono">
-                <span class="truncate max-w-[110px] text-zinc-400 text-[10px]">${item.specs || '16:9 · 720p'}</span>
-                
-                <div class="flex items-center space-x-1.5 shrink-0">
-                  <!-- Download Button -->
-                  <a href="${item.videoUrl}" target="_blank" download="generated-video.mp4" 
-                    class="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition" title="Download">
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                  </a>
-
-                  <!-- Delete Button -->
-                  <button type="button" onclick="deleteSingleProject('${itemId}')" 
-                    class="p-1.5 rounded-lg bg-zinc-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-zinc-800 transition" title="Delete">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                  </button>
-                </div>
-              </div>
-            `;
-            grid.appendChild(card);
-          });
-
-          // বাটন ও আইকন দৃশ্যমান করার জন্য রেন্ডার
-          renderIcons();
-        });
-    }
-
-    // একক প্রজেক্ট ডিলিট করার ফাংশন
-    async function deleteSingleProject(docId) {
-      if (confirm(currentLang === 'en' ? "Are you sure you want to delete this project?" : "আপনি কি এই প্রজেক্টটি ডিলিট করতে চান?")) {
-        try {
-          await db.collection('generations').doc(docId).delete();
-        } catch (err) {
-          alert("Error: " + err.message);
+          // Register this device
+          const deviceName = /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile Device' : 'Desktop / PC';
+          devices.push({ id: myDeviceId, name: deviceName, linkedAt: Date.now() });
+          await db.collection('users').doc(userFound.id).update({ activeDevices: devices });
         }
+
+        localStorage.setItem('flow_active_uid', userFound.id);
+        startStudio(userFound);
+
+      } catch (err) {
+        document.getElementById('login-error').textContent = err.message;
+        document.getElementById('login-error').classList.remove('hidden');
       }
+    });
+
+    // ================= WHATSAPP-STYLE QR CODE PAIRING LOGIC =================
+    let qrSessionDocId = null;
+    let qrSessionUnsubscribe = null;
+
+    async function showQrLoginView() {
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('qr-login-container').classList.remove('hidden');
+      document.getElementById('qr-login-container').classList.add('flex');
+      document.getElementById('login-subtext').textContent = "হোয়াটসঅ্যাপের মতো কিউআর কোড স্ক্যান করে পেয়ার করুন";
+
+      const qrBox = document.getElementById('qrcode-box');
+      qrBox.innerHTML = '';
+
+      // Generate a unique session token
+      qrSessionDocId = 'qr_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
+      
+      // Save session in firestore
+      await db.collection('qr_pairings').doc(qrSessionDocId).set({
+        status: 'pending',
+        targetDeviceId: myDeviceId,
+        targetDeviceName: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile Device' : 'Desktop / PC',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Render QR
+      new QRCode(qrBox, {
+        text: JSON.stringify({ action: "link_flow", sessionId: qrSessionDocId }),
+        width: 180,
+        height: 180,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      // Listen for approval from Device 1
+      qrSessionUnsubscribe = db.collection('qr_pairings').doc(qrSessionDocId).onSnapshot(async doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data.status === 'approved' && data.uid) {
+            qrSessionUnsubscribe();
+            localStorage.setItem('flow_active_uid', data.uid);
+            const userDoc = await db.collection('users').doc(data.uid).get();
+            if (userDoc.exists) {
+              startStudio({ id: userDoc.id, ...userDoc.data() });
+            }
+          }
+        }
+      });
     }
 
-    function switchView(view) {
-      const cvs = document.getElementById('view-canvas');
-      const gal = document.getElementById('view-gallery');
-      const bC = document.getElementById('nav-btn-canvas');
-      const bG = document.getElementById('nav-btn-gallery');
-      const footerBar = document.getElementById('prompt-footer-bar');
+    function hideQrLoginView() {
+      if (qrSessionUnsubscribe) qrSessionUnsubscribe();
+      document.getElementById('qr-login-container').classList.add('hidden');
+      document.getElementById('qr-login-container').classList.remove('flex');
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('login-subtext').textContent = "Sign in to launch your dedicated studio";
+    }
 
-      if (view === 'canvas') {
-        cvs.classList.remove('hidden');
-        gal.classList.add('hidden');
-        if (footerBar) footerBar.classList.remove('hidden');
-        bC.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl bg-flowActive text-white text-xs font-medium transition";
-        bG.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition";
-      } else {
-        cvs.classList.add('hidden');
-        gal.classList.remove('hidden');
-        if (footerBar) footerBar.classList.add('hidden'); // অল প্রজেক্টসে ফুল স্ক্রিন অনায়াসে স্ক্রোল করার সুবিধা
-        bG.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl bg-flowActive text-white text-xs font-medium transition";
-        bC.className = "w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-zinc-400 hover:bg-flowHover hover:text-zinc-200 text-xs font-medium transition";
+    // ================= START STUDIO & LIVE USER LISTENER =================
+    function startStudio(user) {
+      currentSessionUser = user;
+      authScreen.classList.add('hidden');
+      mainStudio.classList.remove('hidden');
+
+      const assigned = user.assignedModel || 'Veo 3.1 - Lite';
+      document.getElementById('dock-model-name').textContent = assigned;
+      document.getElementById('dock-credits').textContent = `${user.credits || '5000'} Cr`;
+      document.getElementById('dock-expiry').textContent = calculateRemainingDays(user.expiryDate);
+
+      // Sync active session model for the Chromium extension
+      db.collection('settings').doc('active_session').set({
+        currentModel: assigned,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch(() => {});
+
+      // Realtime listener for device kick / revoke
+      if (userDocUnsubscribe) userDocUnsubscribe();
+      userDocUnsubscribe = db.collection('users').doc(user.id).onSnapshot(doc => {
+        if (doc.exists) {
+          const uData = doc.data();
+          currentSessionUser = { id: doc.id, ...uData };
+          const devices = uData.activeDevices || [];
+          document.getElementById('dock-device-count').textContent = `Devices (${devices.length}/2)`;
+          
+          // If this device was removed, kick out immediately
+          const isStillValid = devices.some(d => d.id === myDeviceId);
+          if (!isStillValid) {
+            alert("আপনার এই ডিভাইসটির সেশন লগআউট করা হয়েছে।");
+            logoutClient();
+          }
+        }
+      });
+
+      if (!isPrivacyActive) {
+        loadStream(globalStreamUrl);
       }
-      if (window.innerWidth < 768) toggleMobileSidebar();
       renderIcons();
     }
 
-    async function clearMyHistory() {
-      if (confirm(currentLang === 'en' ? "Clear all your generated history?" : "আপনার তৈরি করা সকল হিস্ট্রি মুছে ফেলবেন?")) {
-        const snap = await db.collection('generations').where('userEmail', '==', currentSessionUser.email).get();
-        snap.forEach(d => d.ref.delete());
+    // 100% Proportional Native Desktop Scaling (Reelovio Model)
+    function loadStream(url) {
+      frameLoader.classList.remove('hidden');
+      const cleanUrl = url.split('?')[0];
+      streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=6&cursor=local&clipboard=0&kasm_clipboard=0&control_bar=0&show_control_bar=0`;
+      streamFrame.onload = () => frameLoader.classList.add('hidden');
+    }
+
+    function reloadStreamFrame() {
+      frameLoader.classList.remove('hidden');
+      const cleanUrl = globalStreamUrl.split('?')[0];
+      streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=6&cursor=local&clipboard=0&kasm_clipboard=0&control_bar=0&show_control_bar=0&t=${Date.now()}`;
+    }
+
+    // ================= DEVICE MANAGER & CAMERA QR SCANNER =================
+    let html5QrCode = null;
+
+    function openDeviceManagerModal() {
+      if (!currentSessionUser) return;
+      const modal = document.getElementById('device-modal');
+      const list = document.getElementById('devices-list');
+      const btnScan = document.getElementById('btn-open-scanner');
+      list.innerHTML = '';
+
+      const devices = currentSessionUser.activeDevices || [];
+      document.getElementById('dock-device-count').textContent = `Devices (${devices.length}/2)`;
+
+      devices.forEach((dev, idx) => {
+        const isCurrent = dev.id === myDeviceId;
+        const item = document.createElement('div');
+        item.className = "flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-xs";
+        item.innerHTML = `
+          <div class="flex items-center space-x-2.5">
+            <i data-lucide="${dev.name.includes('Mobile') ? 'smartphone' : 'laptop'}" class="w-4 h-4 ${isCurrent ? 'text-emerald-400' : 'text-zinc-400'}"></i>
+            <div>
+              <div class="font-medium text-white flex items-center space-x-1.5">
+                <span>${dev.name}</span>
+                ${isCurrent ? '<span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-900 px-1.5 py-0.2 rounded-full">This Device</span>' : ''}
+              </div>
+              <div class="text-[10px] font-mono text-zinc-500">${dev.id.substring(0, 14)}...</div>
+            </div>
+          </div>
+          ${!isCurrent ? `<button onclick="unlinkDevice('${dev.id}')" class="text-xs text-red-400 hover:text-red-300 font-medium px-2 py-1 rounded-lg hover:bg-red-950/30 transition">Unlink</button>` : ''}
+        `;
+        list.appendChild(item);
+      });
+
+      // Disable scan button if already 2 devices active
+      if (devices.length >= 2) {
+        btnScan.disabled = true;
+        btnScan.className = "w-full py-2.5 bg-zinc-800 text-zinc-500 font-semibold text-xs rounded-xl cursor-not-allowed flex items-center justify-center space-x-2";
+        btnScan.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i><span>২টি ডিভাইস লিমিট পূর্ণ (আনলিঙ্ক করুন)</span>`;
+      } else {
+        btnScan.disabled = false;
+        btnScan.className = "w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs rounded-xl transition flex items-center justify-center space-x-2 shadow-lg";
+        btnScan.innerHTML = `<i data-lucide="camera" class="w-4 h-4"></i><span>Scan QR to Link 2nd Device</span>`;
+      }
+
+      modal.classList.replace('hidden', 'flex');
+      renderIcons();
+    }
+
+    function closeDeviceManagerModal() {
+      stopQrScanner();
+      document.getElementById('device-modal').classList.replace('flex', 'hidden');
+    }
+
+    async function unlinkDevice(deviceId) {
+      if (!currentSessionUser) return;
+      if (confirm("এই ডিভাইসটিকে আপনার অ্যাকাউন্ট থেকে বিচ্ছিন্ন (Unlink) করতে চান?")) {
+        const updated = (currentSessionUser.activeDevices || []).filter(d => d.id !== deviceId);
+        await db.collection('users').doc(currentSessionUser.id).update({ activeDevices: updated });
+        openDeviceManagerModal();
       }
     }
 
-    promptInput.addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = (this.scrollHeight) + 'px';
+    function startQrScanner() {
+      document.getElementById('scanner-wrapper').classList.remove('hidden');
+      document.getElementById('scanner-wrapper').classList.add('flex');
+      document.getElementById('btn-open-scanner').classList.add('hidden');
+
+      html5QrCode = new Html5Qrcode("qr-reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        async (decodedText) => {
+          try {
+            const parsed = JSON.parse(decodedText);
+            if (parsed.action === "link_flow" && parsed.sessionId) {
+              await approveDevicePairing(parsed.sessionId);
+            }
+          } catch(e) {
+            console.error("Invalid QR format", e);
+          }
+        },
+        () => {}
+      ).catch(err => {
+        alert("ক্যামেরা ওপেন করা সম্ভব হয়নি। পারমিশন চেক করুন।");
+        stopQrScanner();
+      });
+    }
+
+    function stopQrScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+          html5QrCode = null;
+        }).catch(() => {});
+      }
+      const wrap = document.getElementById('scanner-wrapper');
+      if (wrap) {
+        wrap.classList.add('hidden');
+        wrap.classList.remove('flex');
+      }
+      const btn = document.getElementById('btn-open-scanner');
+      if (btn) btn.classList.remove('hidden');
+    }
+
+    async function approveDevicePairing(sessionId) {
+      stopQrScanner();
+      try {
+        const sessionRef = db.collection('qr_pairings').doc(sessionId);
+        const sDoc = await sessionRef.get();
+        if (!sDoc.exists) {
+          alert("কিউআর কোডটির মেয়াদ শেষ হয়ে গেছে!");
+          return;
+        }
+
+        const sData = sDoc.data();
+        let devices = currentSessionUser.activeDevices || [];
+
+        if (devices.length >= 2) {
+          alert("সর্বোচ্চ ২টি ডিভাইস লিমিট পূর্ণ রয়েছে!");
+          return;
+        }
+
+        // Add 2nd device to active devices
+        devices.push({
+          id: sData.targetDeviceId,
+          name: sData.targetDeviceName || 'Linked Device',
+          linkedAt: Date.now()
+        });
+
+        await db.collection('users').doc(currentSessionUser.id).update({ activeDevices: devices });
+
+        // Approve pairing session
+        await sessionRef.update({
+          status: 'approved',
+          uid: currentSessionUser.id,
+          approvedAt: Date.now()
+        });
+
+        alert("২য় ডিভাইসটি সফলভাবে লিঙ্ক করা হয়েছে!");
+        closeDeviceManagerModal();
+
+      } catch(err) {
+        alert("লিঙ্ক করতে ব্যর্থ হয়েছে: " + err.message);
+      }
+    }
+
+    // ================= DOCK CONTROLS & LOGOUT =================
+    const dockExpanded = document.getElementById('dock-expanded');
+    const dockCollapsed = document.getElementById('dock-collapsed');
+
+    function collapseDock() {
+      dockExpanded.style.display = 'none';
+      dockCollapsed.style.display = 'flex';
+    }
+
+    function expandDock() {
+      dockCollapsed.style.display = 'none';
+      dockExpanded.style.display = 'flex';
+    }
+
+    async function logoutClient() {
+      if (currentSessionUser) {
+        try {
+          // Remove this device from active devices on logout
+          const updated = (currentSessionUser.activeDevices || []).filter(d => d.id !== myDeviceId);
+          await db.collection('users').doc(currentSessionUser.id).update({ activeDevices: updated });
+        } catch(e) {}
+      }
+      if (userDocUnsubscribe) userDocUnsubscribe();
+      localStorage.removeItem('flow_active_uid');
+      currentSessionUser = null;
+      streamFrame.src = 'about:blank';
+      mainStudio.classList.add('hidden');
+      authScreen.classList.remove('hidden');
+      hideQrLoginView();
+    }
+
+    // ================= DRAG & EXPAND SYSTEM =================
+    const dockWrapper = document.getElementById('dock-wrapper');
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let initLeft = 0, initTop = 0;
+    let totalMoved = 0;
+
+    dockWrapper.addEventListener('pointerdown', (e) => {
+      if (dockExpanded.style.display !== 'none' && (e.target.closest('button') || e.target.closest('a') || e.target.closest('select'))) {
+        return;
+      }
+
+      isDragging = true;
+      totalMoved = 0;
+      startX = e.clientX;
+      startY = e.clientY;
+
+      const rect = dockWrapper.getBoundingClientRect();
+      initLeft = rect.left;
+      initTop = rect.top;
+
+      dockWrapper.setPointerCapture(e.pointerId);
     });
 
-    setLanguage(currentLang);
+    dockWrapper.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      totalMoved = Math.hypot(dx, dy);
+
+      if (totalMoved > 4) {
+        let newX = Math.max(10, Math.min(window.innerWidth - dockWrapper.offsetWidth - 10, initLeft + dx));
+        let newY = Math.max(10, Math.min(window.innerHeight - dockWrapper.offsetHeight - 10, initTop + dy));
+
+        dockWrapper.style.left = `${newX}px`;
+        dockWrapper.style.top = `${newY}px`;
+        dockWrapper.style.bottom = 'auto';
+        dockWrapper.style.right = 'auto';
+      }
+    });
+
+    dockWrapper.addEventListener('pointerup', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      try { dockWrapper.releasePointerCapture(e.pointerId); } catch(err) {}
+
+      if (dockCollapsed.style.display !== 'none' && totalMoved < 6) {
+        expandDock();
+      }
+    });
+
+    dockWrapper.addEventListener('pointercancel', (e) => {
+      isDragging = false;
+      try { dockWrapper.releasePointerCapture(e.pointerId); } catch(err) {}
+    });
+
+    dockCollapsed.addEventListener('click', () => {
+      if (totalMoved < 6) {
+        expandDock();
+      }
+    });
+
     checkSavedSession();
     renderIcons();
   </script>
