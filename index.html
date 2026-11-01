@@ -84,11 +84,6 @@
       <span class="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold uppercase tracking-wider border border-amber-500/20">System Maintenance</span>
       <h2 id="maint-title" class="text-lg sm:text-xl font-bold text-white tracking-wide">সার্ভার রক্ষণাবেক্ষণ চলছে</h2>
       <p id="maint-desc" class="text-xs text-zinc-400 leading-relaxed font-sans">আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।</p>
-      
-      <div class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between text-xs text-zinc-300">
-        <span class="text-zinc-500">সম্ভাব্য সময়:</span>
-        <span id="maint-duration" class="font-mono text-amber-300 font-semibold">আনুমানিক ৩০ মিনিট</span>
-      </div>
     </div>
   </div>
 
@@ -103,6 +98,35 @@
     </div>
   </div>
 
+  <!-- ================= 0.2 LIVE WAITING QUEUE OVERLAY ================= -->
+  <div id="queue-screen" class="fixed inset-0 z-[999999] bg-black/90 backdrop-blur-xl hidden flex-col items-center justify-center p-4 text-center select-none">
+    <div class="max-w-md w-full bg-[#111114] border border-blue-500/30 p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-5">
+      <div class="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+        <i data-lucide="clock" class="w-8 h-8 animate-pulse"></i>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-white tracking-wide">সবগুলো স্টুডিও বর্তমানে ব্যস্ত</h2>
+        <p class="text-xs text-zinc-400 mt-1">অন্যান্য গ্রাহকরা কাজ করছেন। স্লট ফাঁকা হওয়ামাত্রই আপনি সরাসরি প্রবেশ করবেন।</p>
+      </div>
+
+      <div class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-around text-center">
+        <div>
+          <div class="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">আপনার পজিশন</div>
+          <div id="queue-position" class="text-2xl font-black text-blue-400 mt-0.5">#১</div>
+        </div>
+        <div class="h-8 border-r border-zinc-800"></div>
+        <div>
+          <div class="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">আনুমানিক অপেক্ষা</div>
+          <div id="queue-estimated" class="text-base font-bold text-amber-300 font-mono mt-1">~২ মিনিট</div>
+        </div>
+      </div>
+
+      <button type="button" onclick="cancelQueueWaiting()" class="text-xs text-zinc-500 hover:text-red-400 transition underline">
+        অপেক্ষা বাতিল করে লগআউট করুন
+      </button>
+    </div>
+  </div>
+
   <!-- ================= 1. CLIENT LOGIN SCREEN ================= -->
   <div id="auth-screen" class="fixed inset-0 z-50 bg-[#050507] flex items-center justify-center p-4 overflow-y-auto">
     <div class="w-full max-w-sm bg-[#111114] border border-[#1f1f24] p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center relative my-auto">
@@ -113,7 +137,6 @@
       <span id="login-site-name" class="text-xl font-bold tracking-tight text-white mb-1">Google Flow Ultra</span>
       <p id="login-subtext" class="text-xs text-zinc-400 mb-5 text-center">Sign in to launch your dedicated studio</p>
 
-      <!-- VIEW A: EMAIL / PASSWORD LOGIN -->
       <form id="login-form" class="w-full space-y-3.5 sm:space-y-4">
         <div>
           <label class="block text-xs font-medium text-zinc-400 mb-1">Gmail / Email</label>
@@ -151,14 +174,14 @@
         </button>
       </form>
 
-      <!-- VIEW B: QR CODE PAIRING VIEW -->
+      <!-- GUARANTEED QR CODE VIEW -->
       <div id="qr-login-container" class="hidden w-full flex-col items-center space-y-4">
         <div class="p-3 bg-white rounded-2xl shadow-xl flex items-center justify-center">
-          <div id="qrcode-box" class="w-[160px] h-[160px] sm:w-[180px] sm:h-[180px] flex items-center justify-center"></div>
+          <div id="qrcode-box" class="w-[160px] h-[160px] flex items-center justify-center bg-white overflow-hidden rounded-lg"></div>
         </div>
 
         <div class="text-center space-y-1 px-2">
-          <p class="text-xs font-medium text-white">১ম ডিভাইস থেকে স্ক্যান করুন</p>
+          <p class="text-xs font-semibold text-white">১ম ডিভাইস থেকে স্ক্যান করুন</p>
           <p class="text-[11px] text-zinc-400 leading-normal">যে ডিভাইসে অ্যাকাউন্ট লগইন আছে, তার ডকের <b>Devices</b> মেনু থেকে স্ক্যান করুন।</p>
         </div>
 
@@ -183,7 +206,7 @@
       
       <div id="frame-loader" class="absolute inset-0 bg-black flex flex-col items-center justify-center space-y-3 z-10">
         <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-xs text-zinc-400 font-mono tracking-wide">Connecting to Google Flow Ultra Engine...</p>
+        <p class="text-xs text-zinc-400 font-mono tracking-wide">Connecting to Dedicated Studio Slot...</p>
       </div>
     </div>
 
@@ -200,7 +223,7 @@
           <span id="dock-icon-box" class="w-3.5 h-3.5 flex items-center justify-center">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           </span>
-          <span>Ultra</span>
+          <span id="dock-slot-label">Slot 1</span>
         </div>
 
         <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-200 font-medium shrink-0">
@@ -218,7 +241,6 @@
           <span id="dock-expiry">30d Left</span>
         </div>
 
-        <!-- 2-DEVICE MANAGER BUTTON -->
         <button type="button" onclick="openDeviceManagerModal()" 
           class="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-blue-950/60 hover:bg-blue-900/80 border border-blue-800 text-[11px] text-blue-300 font-medium transition shrink-0" 
           title="Manage Linked Devices">
@@ -226,11 +248,11 @@
           <span id="dock-device-count">Devices (1/2)</span>
         </button>
 
-        <a id="btn-local-download" href="#" target="_blank" download="google-flow-video.mp4" 
+        <button id="btn-local-download" type="button" onclick="downloadGeneratedVideo(event)"
           class="hidden items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-[11px] font-bold shadow-lg transition shrink-0">
           <i data-lucide="download" class="w-3.5 h-3.5 stroke-[2.5]"></i>
           <span class="hidden sm:inline">Download</span>
-        </a>
+        </button>
 
         <button type="button" onclick="reloadStreamFrame()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Reload Engine">
           <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
@@ -294,7 +316,6 @@
   </div>
 
   <script>
-    // DISABLE RIGHT CLICK & INSPECT SHORTCUTS
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('keydown', e => {
       if (
@@ -341,7 +362,6 @@
       renderIcons();
     }
 
-    // PRIVACY BLACKOUT FUNCTION
     let isPrivacyActive = false;
     function setPrivacyBlackout(active) {
       const privScreen = document.getElementById('admin-privacy-screen');
@@ -350,15 +370,11 @@
 
       if (isPrivacyActive) {
         privScreen.style.setProperty('display', 'flex', 'important');
-        if (streamFrame.src !== 'about:blank') {
-          streamFrame.src = 'about:blank';
-        }
+        if (streamFrame.src !== 'about:blank') streamFrame.src = 'about:blank';
       } else {
         privScreen.style.setProperty('display', 'none', 'important');
         if (currentSessionUser && !document.getElementById('main-studio').classList.contains('hidden')) {
-          if (streamFrame.src === 'about:blank' || streamFrame.src.includes('about:blank')) {
-            reloadStreamFrame();
-          }
+          if (streamFrame.src === 'about:blank' || streamFrame.src.includes('about:blank')) reloadStreamFrame();
         }
       }
     }
@@ -379,7 +395,6 @@
           if (m.active === true) {
             document.getElementById('maint-title').textContent = m.title || "সার্ভার রক্ষণাবেক্ষণ চলছে";
             document.getElementById('maint-desc').textContent = m.message || "আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।";
-            document.getElementById('maint-duration').textContent = m.duration || "শীঘ্রই চালু হবে";
             screen.classList.remove('hidden');
             screen.classList.add('flex');
             document.getElementById('live-stream-frame').src = 'about:blank';
@@ -393,13 +408,14 @@
     }
     listenToMaintenance();
 
+    let activeDownloadUrl = null;
     function listenToGeneratedVideos() {
       db.collection('settings').doc('latest_video').onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data();
           const downloadBtn = document.getElementById('btn-local-download');
           if (data.url) {
-            downloadBtn.href = data.url;
+            activeDownloadUrl = data.url;
             downloadBtn.classList.remove('hidden');
             downloadBtn.classList.add('flex');
             renderIcons();
@@ -409,15 +425,43 @@
     }
     listenToGeneratedVideos();
 
-    let globalStreamUrl = 'http://15.235.246.137:3000';
+    async function downloadGeneratedVideo(e) {
+      if (e) e.preventDefault();
+      if (!activeDownloadUrl) return;
+
+      const btn = document.getElementById('btn-local-download');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<span class="animate-spin text-xs">⏳</span> Downloading...`;
+
+      try {
+        const res = await fetch(activeDownloadUrl);
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = blobUrl;
+        a.download = `google-flow-${Date.now()}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(blobUrl);
+        }, 1000);
+      } catch (err) {
+        window.open(activeDownloadUrl, '_blank');
+      } finally {
+        btn.innerHTML = originalText;
+        renderIcons();
+      }
+    }
+
     function listenToSiteConfig() {
       db.collection('settings').doc('site_config').onSnapshot(doc => {
         if (doc.exists) {
           const cfg = doc.data();
-          if (typeof cfg.privacyActive !== 'undefined') {
-            setPrivacyBlackout(cfg.privacyActive === true);
-          }
-          if (cfg.streamUrl) globalStreamUrl = cfg.streamUrl.trim();
+          if (typeof cfg.privacyActive !== 'undefined') setPrivacyBlackout(cfg.privacyActive === true);
           if (cfg.siteName) {
             document.getElementById('page-title').textContent = cfg.siteName;
             document.getElementById('login-site-name').textContent = cfg.siteName;
@@ -435,10 +479,129 @@
 
     let currentSessionUser = null;
     let userDocUnsubscribe = null;
+    let assignedStreamUrl = "";
+    let assignedSlotNumber = 1;
+    let currentSlotDocId = null;
     const authScreen = document.getElementById('auth-screen');
     const mainStudio = document.getElementById('main-studio');
     const streamFrame = document.getElementById('live-stream-frame');
     const frameLoader = document.getElementById('frame-loader');
+
+    // ================= ৩টি স্লটের ডায়নামিক ক্লাউডফ্লেয়ার ইউআরএল অ্যাসাইনমেন্ট =================
+    async function requestStudioSlot(user) {
+      const slotsRef = db.collection('server_slots');
+      
+      try {
+        // ১. গ্রাহক পূর্বে কোনো স্লটে অ্যাসাইন হয়ে থাকলে সেটি নেওয়া
+        const myClaim = await slotsRef.where('activeUid', '==', user.id).get();
+        if (!myClaim.empty) {
+          const doc = myClaim.docs[0];
+          currentSlotDocId = doc.id;
+          assignedSlotNumber = doc.data().slotNumber || (doc.data().port - 3000);
+          return doc.data().url || `http://15.235.246.137:${doc.data().port}`;
+        }
+
+        // ২. ফ্রি স্লট খোঁজা (Slot 1, 2, 3)
+        const freeSnap = await slotsRef.where('isBusy', '==', false).get();
+        if (!freeSnap.empty) {
+          const sorted = freeSnap.docs.sort((a,b) => (a.data().port || 0) - (b.data().port || 0));
+          const doc = sorted[0];
+          currentSlotDocId = doc.id;
+          assignedSlotNumber = doc.data().slotNumber || (doc.data().port - 3000);
+          
+          await doc.ref.update({
+            isBusy: true,
+            activeUid: user.id,
+            userEmail: user.email,
+            claimedAt: Date.now()
+          });
+
+          return doc.data().url || `http://15.235.246.137:${doc.data().port}`;
+        }
+      } catch(e) {
+        console.warn("Slot auto-assign error:", e);
+      }
+
+      // ৩. সব স্লট ব্যস্ত থাকলে ওয়েটিং কিউতে প্রবেশ
+      return await enterWaitingQueue(user);
+    }
+
+    let queueListener = null;
+    function enterWaitingQueue(user) {
+      return new Promise(async (resolve) => {
+        const queueRef = db.collection('queue_pool');
+        const qDoc = queueRef.doc(user.id);
+        
+        await qDoc.set({
+          uid: user.id,
+          email: user.email,
+          enteredAt: Date.now()
+        }).catch(() => {});
+
+        document.getElementById('queue-screen').classList.remove('hidden');
+        document.getElementById('queue-screen').classList.add('flex');
+
+        queueListener = queueRef.orderBy('enteredAt', 'asc').onSnapshot(async (snap) => {
+          let pos = 1;
+          for (let doc of snap.docs) {
+            if (doc.id === user.id) break;
+            pos++;
+          }
+
+          document.getElementById('queue-position').textContent = `#${pos}`;
+          document.getElementById('queue-estimated').textContent = `~${pos * 2} মিনিট`;
+
+          if (pos === 1) {
+            const free = await db.collection('server_slots').where('isBusy', '==', false).get();
+            if (!free.empty) {
+              const sorted = free.docs.sort((a, b) => (a.data().port || 0) - (b.data().port || 0));
+              const slot = sorted[0];
+              currentSlotDocId = slot.id;
+              assignedSlotNumber = slot.data().slotNumber || (slot.data().port - 3000);
+
+              await slot.ref.update({
+                isBusy: true,
+                activeUid: user.id,
+                userEmail: user.email,
+                claimedAt: Date.now()
+              });
+
+              await qDoc.delete().catch(() => {});
+              if (queueListener) queueListener();
+              document.getElementById('queue-screen').classList.add('hidden');
+              document.getElementById('queue-screen').classList.remove('flex');
+              resolve(slot.data().url || `http://15.235.246.137:${slot.data().port}`);
+            }
+          }
+        });
+      });
+    }
+
+    async function cancelQueueWaiting() {
+      if (queueListener) queueListener();
+      if (currentSessionUser) {
+        await db.collection('queue_pool').doc(currentSessionUser.id).delete().catch(() => {});
+      }
+      document.getElementById('queue-screen').classList.add('hidden');
+      document.getElementById('queue-screen').classList.remove('flex');
+      logoutClient();
+    }
+
+    async function releaseMySlot() {
+      if (currentSlotDocId) {
+        await db.collection('server_slots').doc(currentSlotDocId).update({
+          isBusy: false,
+          activeUid: "",
+          userEmail: "",
+          claimedAt: null
+        }).catch(() => {});
+        currentSlotDocId = null;
+      }
+    }
+
+    window.addEventListener('beforeunload', () => {
+      releaseMySlot();
+    });
 
     async function checkSavedSession() {
       const uid = localStorage.getItem('flow_active_uid');
@@ -451,6 +614,8 @@
             const isAuthorized = devices.some(d => d.id === myDeviceId);
 
             if (isAuthorized && validateUserStatus(data)) {
+              currentSessionUser = data;
+              assignedStreamUrl = await requestStudioSlot(data);
               startStudio(data);
               return;
             }
@@ -523,53 +688,72 @@
         }
 
         localStorage.setItem('flow_active_uid', userFound.id);
+        currentSessionUser = userFound;
+        
+        assignedStreamUrl = await requestStudioSlot(userFound);
         startStudio(userFound);
 
       } catch (err) {
-        document.getElementById('login-error').textContent = err.message;
-        document.getElementById('login-error').classList.remove('hidden');
+        err.textContent = err.message;
+        err.classList.remove('hidden');
       }
     });
 
+    // ================= নির্ভরযোগ্য কিউআর কোড হ্যান্ডলার =================
     let qrSessionDocId = null;
     let qrSessionUnsubscribe = null;
 
     async function showQrLoginView() {
       document.getElementById('login-form').classList.add('hidden');
-      document.getElementById('qr-login-container').classList.remove('hidden');
-      document.getElementById('qr-login-container').classList.add('flex');
+      const qrContainer = document.getElementById('qr-login-container');
+      qrContainer.classList.remove('hidden');
+      qrContainer.classList.add('flex');
       document.getElementById('login-subtext').textContent = "হোয়াটসঅ্যাপের মতো কিউআর কোড স্ক্যান করে পেয়ার করুন";
 
       const qrBox = document.getElementById('qrcode-box');
       qrBox.innerHTML = '';
 
-      qrSessionDocId = 'qr_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
-      
-      await db.collection('qr_pairings').doc(qrSessionDocId).set({
-        status: 'pending',
-        targetDeviceId: myDeviceId,
-        targetDeviceName: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile Device' : 'Desktop / PC',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      qrSessionDocId = 'qr_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+      const qrPayload = JSON.stringify({ action: "link_flow", sessionId: qrSessionDocId });
 
-      new QRCode(qrBox, {
-        text: JSON.stringify({ action: "link_flow", sessionId: qrSessionDocId }),
-        width: 160,
-        height: 160,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
-      });
+      try {
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(qrBox, {
+            text: qrPayload,
+            width: 160,
+            height: 160,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } else {
+          throw new Error("QRCode lib missing");
+        }
+      } catch(e) {
+        qrBox.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrPayload)}" class="w-[160px] h-[160px] rounded-lg" alt="QR Code">`;
+      }
+
+      try {
+        await db.collection('qr_pairings').doc(qrSessionDocId).set({
+          status: 'pending',
+          targetDeviceId: myDeviceId,
+          targetDeviceName: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile Device' : 'Desktop / PC',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch(e) {}
 
       qrSessionUnsubscribe = db.collection('qr_pairings').doc(qrSessionDocId).onSnapshot(async doc => {
         if (doc.exists) {
           const data = doc.data();
           if (data.status === 'approved' && data.uid) {
-            qrSessionUnsubscribe();
+            if (qrSessionUnsubscribe) qrSessionUnsubscribe();
             localStorage.setItem('flow_active_uid', data.uid);
             const userDoc = await db.collection('users').doc(data.uid).get();
             if (userDoc.exists) {
-              startStudio({ id: userDoc.id, ...userDoc.data() });
+              const u = { id: userDoc.id, ...userDoc.data() };
+              currentSessionUser = u;
+              assignedStreamUrl = await requestStudioSlot(u);
+              startStudio(u);
             }
           }
         }
@@ -593,11 +777,7 @@
       document.getElementById('dock-model-name').textContent = assigned;
       document.getElementById('dock-credits').textContent = `${user.credits || '5000'} Cr`;
       document.getElementById('dock-expiry').textContent = calculateRemainingDays(user.expiryDate);
-
-      db.collection('settings').doc('active_session').set({
-        currentModel: assigned,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true }).catch(() => {});
+      document.getElementById('dock-slot-label').textContent = `Slot #${assignedSlotNumber}`;
 
       if (userDocUnsubscribe) userDocUnsubscribe();
       userDocUnsubscribe = db.collection('users').doc(user.id).onSnapshot(doc => {
@@ -616,7 +796,7 @@
       });
 
       if (!isPrivacyActive) {
-        loadStream(globalStreamUrl);
+        loadStream(assignedStreamUrl);
       }
       renderIcons();
     }
@@ -631,13 +811,12 @@
 
     function reloadStreamFrame() {
       frameLoader.classList.remove('hidden');
-      const cleanUrl = globalStreamUrl.split('?')[0].replace(/\/+$/, '');
+      const cleanUrl = assignedStreamUrl.split('?')[0].replace(/\/+$/, '');
       streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=6&cursor=local&clipboard=0&kasm_clipboard=0&control_bar=0&show_control_bar=0&t=${Date.now()}`;
       setTimeout(() => frameLoader.classList.add('hidden'), 3500);
     }
 
     let html5QrCode = null;
-
     function openDeviceManagerModal() {
       if (!currentSessionUser) return;
       const modal = document.getElementById('device-modal');
@@ -711,9 +890,7 @@
             if (parsed.action === "link_flow" && parsed.sessionId) {
               await approveDevicePairing(parsed.sessionId);
             }
-          } catch(e) {
-            console.error("Invalid QR format", e);
-          }
+          } catch(e) {}
         },
         () => {}
       ).catch(() => {
@@ -743,18 +920,12 @@
       try {
         const sessionRef = db.collection('qr_pairings').doc(sessionId);
         const sDoc = await sessionRef.get();
-        if (!sDoc.exists) {
-          alert("কিউআর কোডের মেয়াদ শেষ হয়ে গেছে!");
-          return;
-        }
+        if (!sDoc.exists) return alert("কিউআর কোডের মেয়াদ শেষ হয়ে গেছে!");
 
         const sData = sDoc.data();
         let devices = currentSessionUser.activeDevices || [];
 
-        if (devices.length >= 2) {
-          alert("সর্বোচ্চ ২টি ডিভাইস লিমিট পূর্ণ রয়েছে!");
-          return;
-        }
+        if (devices.length >= 2) return alert("সর্বোচ্চ ২টি ডিভাইস লিমিট পূর্ণ রয়েছে!");
 
         devices.push({
           id: sData.targetDeviceId,
@@ -763,16 +934,10 @@
         });
 
         await db.collection('users').doc(currentSessionUser.id).update({ activeDevices: devices });
-
-        await sessionRef.update({
-          status: 'approved',
-          uid: currentSessionUser.id,
-          approvedAt: Date.now()
-        });
+        await sessionRef.update({ status: 'approved', uid: currentSessionUser.id, approvedAt: Date.now() });
 
         alert("২য় ডিভাইসটি সফলভাবে লিঙ্ক করা হয়েছে!");
         closeDeviceManagerModal();
-
       } catch(err) {
         alert("লিঙ্ক ব্যর্থ হয়েছে: " + err.message);
       }
@@ -792,6 +957,7 @@
     }
 
     async function logoutClient() {
+      await releaseMySlot();
       if (currentSessionUser) {
         try {
           const updated = (currentSessionUser.activeDevices || []).filter(d => d.id !== myDeviceId);
@@ -817,22 +983,18 @@
       if (dockExpanded.style.display !== 'none' && (e.target.closest('button') || e.target.closest('a') || e.target.closest('select'))) {
         return;
       }
-
       isDragging = true;
       totalMoved = 0;
       startX = e.clientX;
       startY = e.clientY;
-
       const rect = dockWrapper.getBoundingClientRect();
       initLeft = rect.left;
       initTop = rect.top;
-
       dockWrapper.setPointerCapture(e.pointerId);
     });
 
     dockWrapper.addEventListener('pointermove', (e) => {
       if (!isDragging) return;
-
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
       totalMoved = Math.hypot(dx, dy);
@@ -840,7 +1002,6 @@
       if (totalMoved > 4) {
         let newX = Math.max(8, Math.min(window.innerWidth - dockWrapper.offsetWidth - 8, initLeft + dx));
         let newY = Math.max(8, Math.min(window.innerHeight - dockWrapper.offsetHeight - 8, initTop + dy));
-
         dockWrapper.style.left = `${newX}px`;
         dockWrapper.style.top = `${newY}px`;
         dockWrapper.style.bottom = 'auto';
@@ -852,10 +1013,7 @@
       if (!isDragging) return;
       isDragging = false;
       try { dockWrapper.releasePointerCapture(e.pointerId); } catch(err) {}
-
-      if (dockCollapsed.style.display !== 'none' && totalMoved < 6) {
-        expandDock();
-      }
+      if (dockCollapsed.style.display !== 'none' && totalMoved < 6) expandDock();
     });
 
     dockWrapper.addEventListener('pointercancel', (e) => {
@@ -864,9 +1022,7 @@
     });
 
     dockCollapsed.addEventListener('click', () => {
-      if (totalMoved < 6) {
-        expandDock();
-      }
+      if (totalMoved < 6) expandDock();
     });
 
     checkSavedSession();
