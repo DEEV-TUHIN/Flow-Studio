@@ -203,9 +203,9 @@
     <div class="stream-container">
       <iframe id="live-stream-frame" src="about:blank" allow="autoplay"></iframe>
       
-      <div id="frame-loader" class="absolute inset-0 bg-black flex flex-col items-center justify-center space-y-3 z-10">
+      <div id="frame-loader" class="absolute inset-0 bg-black flex flex-col items-center justify-center space-y-3 z-10 transition-opacity duration-300">
         <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-xs text-zinc-400 font-mono tracking-wide">Connecting to Dedicated Studio Slot...</p>
+        <p class="text-xs text-zinc-400 font-mono tracking-wide">Connecting to Ultra Neural Studio...</p>
       </div>
     </div>
 
@@ -486,7 +486,7 @@
     const streamFrame = document.getElementById('live-stream-frame');
     const frameLoader = document.getElementById('frame-loader');
 
-    // ================= ৩টি স্লটের ক্লাউডফ্লেয়ার ডায়নামিক রুট =================
+    // ================= ৩টি স্লটের ডায়নামিক ক্লাউডফ্লেয়ার ইউআরএল অ্যাসাইনমেন্ট =================
     async function requestStudioSlot(user) {
       const slotsRef = db.collection('server_slots');
       
@@ -790,23 +790,23 @@
       renderIcons();
     }
 
-    // ফাস্ট ও নিশ্চিত স্ট্রিম লোডার (ব্ল্যাক স্ক্রিন ফিক্স)
+    // অপ্টিমাইজড ফাস্ট লোডার (ব্ল্যাক স্ক্রিন ফিক্স)
     function loadStream(url) {
       frameLoader.classList.remove('hidden');
       const cleanUrl = (url || '').split('?')[0].replace(/\/+$/, '');
       streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=8&cursor=local&control_bar=0&show_control_bar=0&sidebar=0&kasm_sidebar=0`;
       
       streamFrame.onload = () => {
-        setTimeout(() => frameLoader.classList.add('hidden'), 500);
+        setTimeout(() => frameLoader.classList.add('hidden'), 400);
       };
-      setTimeout(() => frameLoader.classList.add('hidden'), 1500);
+      setTimeout(() => frameLoader.classList.add('hidden'), 1200);
     }
 
     function reloadStreamFrame() {
       frameLoader.classList.remove('hidden');
       const cleanUrl = (assignedStreamUrl || '').split('?')[0].replace(/\/+$/, '');
       streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=8&cursor=local&control_bar=0&show_control_bar=0&sidebar=0&kasm_sidebar=0&t=${Date.now()}`;
-      setTimeout(() => frameLoader.classList.add('hidden'), 1500);
+      setTimeout(() => frameLoader.classList.add('hidden'), 1200);
     }
 
     let html5QrCode = null;
