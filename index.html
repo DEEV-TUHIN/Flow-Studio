@@ -32,10 +32,9 @@
       height: 100vh;
       border: none;
       display: block;
-      image-rendering: -webkit-optimize-contrast;
+      background: #000;
     }
 
-    /* Draggable Floating Dock */
     .glass-pill {
       background: rgba(14, 14, 18, 0.96);
       backdrop-filter: blur(24px);
@@ -223,7 +222,7 @@
           <span id="dock-icon-box" class="w-3.5 h-3.5 flex items-center justify-center">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           </span>
-          <span id="dock-slot-label">Slot 1</span>
+          <span id="dock-slot-label">Slot #1</span>
         </div>
 
         <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-200 font-medium shrink-0">
@@ -487,12 +486,11 @@
     const streamFrame = document.getElementById('live-stream-frame');
     const frameLoader = document.getElementById('frame-loader');
 
-    // ================= ৩টি স্লটের ডায়নামিক ক্লাউডফ্লেয়ার ইউআরএল অ্যাসাইনমেন্ট =================
+    // ================= ৩টি স্লটের ক্লাউডফ্লেয়ার ডায়নামিক রুট =================
     async function requestStudioSlot(user) {
       const slotsRef = db.collection('server_slots');
       
       try {
-        // ১. গ্রাহক পূর্বে কোনো স্লটে অ্যাসাইন হয়ে থাকলে সেটি নেওয়া
         const myClaim = await slotsRef.where('activeUid', '==', user.id).get();
         if (!myClaim.empty) {
           const doc = myClaim.docs[0];
@@ -501,7 +499,6 @@
           return doc.data().url || `http://15.235.246.137:${doc.data().port}`;
         }
 
-        // ২. ফ্রি স্লট খোঁজা (Slot 1, 2, 3)
         const freeSnap = await slotsRef.where('isBusy', '==', false).get();
         if (!freeSnap.empty) {
           const sorted = freeSnap.docs.sort((a,b) => (a.data().port || 0) - (b.data().port || 0));
@@ -518,11 +515,8 @@
 
           return doc.data().url || `http://15.235.246.137:${doc.data().port}`;
         }
-      } catch(e) {
-        console.warn("Slot auto-assign error:", e);
-      }
+      } catch(e) {}
 
-      // ৩. সব স্লট ব্যস্ত থাকলে ওয়েটিং কিউতে প্রবেশ
       return await enterWaitingQueue(user);
     }
 
@@ -699,7 +693,6 @@
       }
     });
 
-    // ================= নির্ভরযোগ্য কিউআর কোড হ্যান্ডলার =================
     let qrSessionDocId = null;
     let qrSessionUnsubscribe = null;
 
@@ -726,21 +719,17 @@
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
           });
-        } else {
-          throw new Error("QRCode lib missing");
         }
       } catch(e) {
         qrBox.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrPayload)}" class="w-[160px] h-[160px] rounded-lg" alt="QR Code">`;
       }
 
-      try {
-        await db.collection('qr_pairings').doc(qrSessionDocId).set({
-          status: 'pending',
-          targetDeviceId: myDeviceId,
-          targetDeviceName: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile Device' : 'Desktop / PC',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      } catch(e) {}
+      await db.collection('qr_pairings').doc(qrSessionDocId).set({
+        status: 'pending',
+        targetDeviceId: myDeviceId,
+        targetDeviceName: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile Device' : 'Desktop / PC',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(() => {});
 
       qrSessionUnsubscribe = db.collection('qr_pairings').doc(qrSessionDocId).onSnapshot(async doc => {
         if (doc.exists) {
@@ -801,19 +790,23 @@
       renderIcons();
     }
 
+    // ফাস্ট ও নিশ্চিত স্ট্রিম লোডার (ব্ল্যাক স্ক্রিন ফিক্স)
     function loadStream(url) {
       frameLoader.classList.remove('hidden');
-      const cleanUrl = url.split('?')[0].replace(/\/+$/, '');
-      streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=6&cursor=local&clipboard=0&kasm_clipboard=0&control_bar=0&show_control_bar=0`;
-      streamFrame.onload = () => frameLoader.classList.add('hidden');
-      setTimeout(() => frameLoader.classList.add('hidden'), 3500);
+      const cleanUrl = (url || '').split('?')[0].replace(/\/+$/, '');
+      streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=8&cursor=local&control_bar=0&show_control_bar=0&sidebar=0&kasm_sidebar=0`;
+      
+      streamFrame.onload = () => {
+        setTimeout(() => frameLoader.classList.add('hidden'), 500);
+      };
+      setTimeout(() => frameLoader.classList.add('hidden'), 1500);
     }
 
     function reloadStreamFrame() {
       frameLoader.classList.remove('hidden');
-      const cleanUrl = assignedStreamUrl.split('?')[0].replace(/\/+$/, '');
-      streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=6&cursor=local&clipboard=0&kasm_clipboard=0&control_bar=0&show_control_bar=0&t=${Date.now()}`;
-      setTimeout(() => frameLoader.classList.add('hidden'), 3500);
+      const cleanUrl = (assignedStreamUrl || '').split('?')[0].replace(/\/+$/, '');
+      streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=8&cursor=local&control_bar=0&show_control_bar=0&sidebar=0&kasm_sidebar=0&t=${Date.now()}`;
+      setTimeout(() => frameLoader.classList.add('hidden'), 1500);
     }
 
     let html5QrCode = null;
