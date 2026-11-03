@@ -10,6 +10,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -82,7 +83,7 @@
 </head>
 <body class="flex flex-col h-screen w-screen overflow-hidden select-none bg-black" oncontextmenu="return false;">
 
-  <!-- গ্রাহকের নিজস্ব লোকাল ডিভাইসের জন্য ফাইল পিকার -->
+  <!-- লোকাল ফাইল পিকার -->
   <input type="file" id="local-device-file-input" accept="image/*,video/*" class="hidden">
 
   <!-- 0. MAINTENANCE OVERLAY -->
@@ -93,7 +94,7 @@
       </div>
       <span class="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold uppercase tracking-wider border border-amber-500/20">System Maintenance</span>
       <h2 id="maint-title" class="text-lg sm:text-xl font-bold text-white tracking-wide">সার্ভার রক্ষণাবেক্ষণ চলছে</h2>
-      <p id="maint-desc" class="text-xs text-zinc-400 leading-relaxed font-sans">আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত সেবা পুনরায় চালু হবে।</p>
+      <p id="maint-desc" class="text-xs text-zinc-400 leading-relaxed font-sans">আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।</p>
     </div>
   </div>
 
@@ -323,7 +324,6 @@
   </div>
 
   <script>
-    // অ্যান্টি-ইন্সপেক্ট ব্লকার
     window.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); return false; }, true);
     document.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); return false; }, true);
     window.addEventListener('keydown', e => {
@@ -344,6 +344,7 @@
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const storage = firebase.storage();
 
     function renderIcons() { if (window.lucide) lucide.createIcons(); }
 
@@ -398,7 +399,7 @@
           const screen = document.getElementById('maintenance-screen');
           if (m.active === true) {
             document.getElementById('maint-title').textContent = m.title || "সার্ভার রক্ষণাবেক্ষণ চলছে";
-            document.getElementById('maint-desc').textContent = m.message || "আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত সেবা পুনরায় চালু হবে।";
+            document.getElementById('maint-desc').textContent = m.message || "আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।";
             screen.classList.remove('hidden');
             screen.classList.add('flex');
             document.getElementById('live-stream-frame').src = 'about:blank';
@@ -424,22 +425,25 @@
     const frameLoader = document.getElementById('frame-loader');
 
     // ================= ৩-ডট ডাউনলোড অটো-ইন্টারসেপ্টর (সরাসরি লোকাল স্টোরেজে সেভ) =================
-    window.addEventListener('message', (e) => {
-      if (e.data && e.data.action === 'TRIGGER_LOCAL_DOWNLOAD') {
-        const url = e.data.url;
-        if (url) executeLocalDownload(url, e.data.filename);
-      }
-    });
-
     let lastHandledDownloadTime = 0;
     function listenToDownloads(slotNumber) {
       if (slotDocUnsubscribe) slotDocUnsubscribe();
       slotDocUnsubscribe = db.collection('server_slots').doc(`slot_${slotNumber}`).onSnapshot(doc => {
         if (!doc.exists) return;
-        const dl = doc.data().latest_download;
+        const data = doc.data();
+
+        // ডাউনলোড সিগন্যাল
+        const dl = data.latest_download;
         if (dl && dl.url && Number(dl.time) > lastHandledDownloadTime) {
           lastHandledDownloadTime = Number(dl.time);
           executeLocalDownload(dl.url, dl.filename);
+        }
+
+        // প্লাস (+) বাটন ফাইল পিকার সিগন্যাল
+        const upReq = Number(data.upload_request_time || 0);
+        if (upReq > lastHandledUploadTimestamp) {
+          lastHandledUploadTimestamp = upReq;
+          localFileInput.click();
         }
       });
     }
@@ -459,32 +463,34 @@
       }
     }
 
-    // ================= প্লাস (+) বাটন লোকাল ডিভাইস ফাইল ব্রিজ =================
+    // ================= প্লাস (+) বাটন লোকাল ডিভাইস ফাইল ব্রিজ (ক্লাউড স্টোরেজ ভিত্তিক) =================
     const localFileInput = document.getElementById('local-device-file-input');
+    let lastHandledUploadTimestamp = 0;
 
-    window.addEventListener('message', (e) => {
-      if (e.data && e.data.action === 'OPEN_LOCAL_DEVICE_PICKER') {
-        localFileInput.click();
-      }
-    });
-
-    localFileInput.addEventListener('change', () => {
+    localFileInput.addEventListener('change', async () => {
       if (!localFileInput.files || localFileInput.files.length === 0) return;
       const file = localFileInput.files[0];
-      const reader = new FileReader();
 
-      reader.onload = () => {
-        // সরাসরি মেমোরি ট্রান্সফারে গুগল ফ্লোতে ফাইল ইনজেক্ট করা
-        streamFrame.contentWindow.postMessage({
-          action: 'INJECT_FILE_TO_FLOW',
-          base64: reader.result,
-          name: file.name,
-          type: file.type
-        }, '*');
-      };
+      try {
+        // ফায়ারবেস স্টোরেজে সরাসরি ফাইল আপলোড করা
+        const fileRef = storage.ref().child('client_uploads/' + Date.now() + '_' + file.name);
+        await fileRef.put(file);
+        const downloadUrl = await fileRef.getDownloadURL();
 
-      reader.readAsDataURL(file);
-      localFileInput.value = '';
+        // স্লট ডেটাবেসে ফাইল ইউআরএল পুশ করা
+        await db.collection('server_slots').doc(`slot_${assignedSlotNumber}`).set({
+          pendingUpload: {
+            url: downloadUrl,
+            name: file.name,
+            type: file.type || 'image/jpeg',
+            time: Date.now()
+          }
+        }, { merge: true });
+      } catch(err) {
+        alert("ফাইল আপলোড ব্যর্থ হয়েছে: " + err.message);
+      } finally {
+        localFileInput.value = '';
+      }
     });
 
     async function switchActiveServer(slotNum) {
