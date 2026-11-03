@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark" oncontextmenu="return false;">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -14,18 +14,27 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
+    * {
+      -webkit-touch-callout: none !important;
+      -webkit-user-select: none !important;
+      user-select: none !important;
+    }
     body, html {
       margin: 0; padding: 0; width: 100vw; height: 100vh;
       background: #000000; color: #fff; overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
     }
     
     .stream-container {
-      width: 100vw; height: 100vh; position: relative;
-      background: #000; overflow: hidden; display: flex;
-      align-items: center; justify-content: center;
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .stream-container iframe {
       width: 100vw;
@@ -41,7 +50,6 @@
       -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255, 255, 255, 0.16);
       box-shadow: 0 18px 45px rgba(0, 0, 0, 0.9);
-      user-select: none;
       touch-action: none;
     }
 
@@ -72,9 +80,12 @@
     }
   </style>
 </head>
-<body class="flex flex-col h-screen w-screen overflow-hidden select-none bg-black">
+<body class="flex flex-col h-screen w-screen overflow-hidden select-none bg-black" oncontextmenu="return false;">
 
-  <!-- ================= 0. MAINTENANCE OVERLAY ================= -->
+  <!-- গ্রাহকের নিজস্ব লোকাল ডিভাইসের জন্য ফাইল পিকার -->
+  <input type="file" id="local-device-file-input" accept="image/*,video/*" class="hidden">
+
+  <!-- 0. MAINTENANCE OVERLAY -->
   <div id="maintenance-screen" class="fixed inset-0 z-[9999999] bg-black/95 backdrop-blur-2xl hidden flex-col items-center justify-center p-4 text-center select-none">
     <div class="max-w-md w-full bg-[#111114] border border-amber-500/30 p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-4">
       <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
@@ -82,11 +93,11 @@
       </div>
       <span class="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold uppercase tracking-wider border border-amber-500/20">System Maintenance</span>
       <h2 id="maint-title" class="text-lg sm:text-xl font-bold text-white tracking-wide">সার্ভার রক্ষণাবেক্ষণ চলছে</h2>
-      <p id="maint-desc" class="text-xs text-zinc-400 leading-relaxed font-sans">আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।</p>
+      <p id="maint-desc" class="text-xs text-zinc-400 leading-relaxed font-sans">আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত সেবা পুনরায় চালু হবে।</p>
     </div>
   </div>
 
-  <!-- ================= 0.1 ADMIN PRIVACY SHIELD ================= -->
+  <!-- 0.1 ADMIN PRIVACY SHIELD -->
   <div id="admin-privacy-screen" style="display: none; position: fixed; inset: 0; z-index: 2147483647; background: #000; flex-direction: column; align-items: center; justify-content: center; user-select: none;">
     <div class="flex flex-col items-center space-y-4 p-4 text-center">
       <div class="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400 shadow-2xl">
@@ -97,15 +108,15 @@
     </div>
   </div>
 
-  <!-- ================= 0.2 LIVE WAITING QUEUE OVERLAY ================= -->
+  <!-- 0.2 LIVE WAITING QUEUE OVERLAY -->
   <div id="queue-screen" class="fixed inset-0 z-[999999] bg-black/90 backdrop-blur-xl hidden flex-col items-center justify-center p-4 text-center select-none">
     <div class="max-w-md w-full bg-[#111114] border border-blue-500/30 p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-5">
       <div class="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
         <i data-lucide="clock" class="w-8 h-8 animate-pulse"></i>
       </div>
       <div>
-        <h2 class="text-lg font-bold text-white tracking-wide">সবগুলো স্টুডিও বর্তমানে ব্যস্ত</h2>
-        <p class="text-xs text-zinc-400 mt-1">অন্যান্য গ্রাহকরা কাজ করছেন। স্লট ফাঁকা হওয়ামাত্রই আপনি সরাসরি প্রবেশ করবেন।</p>
+        <h2 class="text-lg font-bold text-white tracking-wide">সবগুলো সার্ভার বর্তমানে ব্যস্ত</h2>
+        <p class="text-xs text-zinc-400 mt-1">অন্যান্য গ্রাহকরা কাজ করছেন। সার্ভার ফাঁকা হওয়ামাত্রই আপনি সরাসরি প্রবেশ করবেন।</p>
       </div>
 
       <div class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-around text-center">
@@ -126,7 +137,7 @@
     </div>
   </div>
 
-  <!-- ================= 1. CLIENT LOGIN SCREEN ================= -->
+  <!-- 1. CLIENT LOGIN SCREEN -->
   <div id="auth-screen" class="fixed inset-0 z-50 bg-[#050507] flex items-center justify-center p-4 overflow-y-auto">
     <div class="w-full max-w-sm bg-[#111114] border border-[#1f1f24] p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center relative my-auto">
       
@@ -173,7 +184,6 @@
         </button>
       </form>
 
-      <!-- GUARANTEED QR CODE VIEW -->
       <div id="qr-login-container" class="hidden w-full flex-col items-center space-y-4">
         <div class="p-3 bg-white rounded-2xl shadow-xl flex items-center justify-center">
           <div id="qrcode-box" class="w-[160px] h-[160px] flex items-center justify-center bg-white overflow-hidden rounded-lg"></div>
@@ -197,49 +207,52 @@
     </div>
   </div>
 
-  <!-- ================= 2. LIVE STUDIO VIEW ================= -->
+  <!-- 2. LIVE STUDIO VIEW -->
   <div id="main-studio" class="hidden relative w-full h-full flex flex-col bg-black">
 
     <div class="stream-container">
-      <iframe id="live-stream-frame" src="about:blank" allow="autoplay"></iframe>
+      <iframe id="live-stream-frame" src="about:blank" allow="autoplay; fullscreen;"></iframe>
       
       <div id="frame-loader" class="absolute inset-0 bg-black flex flex-col items-center justify-center space-y-3 z-10 transition-opacity duration-300">
         <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-xs text-zinc-400 font-mono tracking-wide">Connecting to Ultra Neural Studio...</p>
+        <p class="text-xs text-zinc-400 font-mono tracking-wide">Connecting Studio Engine...</p>
       </div>
     </div>
 
-    <!-- ================= 3. MOBILE RESPONSIVE DOCK ================= -->
+    <!-- 3. MINIMAL REELOVIO-STYLE FLOATING PILL -->
     <div id="dock-wrapper" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000;">
       
-      <div id="dock-expanded" class="glass-pill rounded-full px-2.5 py-1.5 flex items-center space-x-2 text-xs no-scrollbar">
+      <div id="dock-expanded" class="glass-pill rounded-full px-2.5 py-1.5 flex items-center space-x-2.5 text-xs no-scrollbar">
         
         <div class="drag-handle shrink-0" title="Drag Anywhere">
           <i data-lucide="grip-vertical" class="w-4 h-4 text-zinc-500"></i>
         </div>
 
-        <div class="flex items-center space-x-1.5 px-2 py-1 rounded-full bg-black/60 text-emerald-400 text-[11px] font-semibold border border-emerald-500/20 shrink-0">
-          <span id="dock-icon-box" class="w-3.5 h-3.5 flex items-center justify-center">
+        <!-- SERVER SWITCHER (SERVER 1, 2, 3) -->
+        <div class="relative flex items-center shrink-0">
+          <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-black/60 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          </span>
-          <span id="dock-slot-label">Slot #1</span>
+            <select id="server-selector" onchange="switchActiveServer(this.value)" class="bg-transparent text-emerald-300 font-semibold text-xs focus:outline-none cursor-pointer">
+              <option value="1" class="bg-zinc-900 text-white">Server 1</option>
+              <option value="2" class="bg-zinc-900 text-white">Server 2</option>
+              <option value="3" class="bg-zinc-900 text-white">Server 3</option>
+            </select>
+          </div>
         </div>
 
-        <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-200 font-medium shrink-0">
-          <i data-lucide="cpu" class="w-3 h-3 text-purple-400"></i>
-          <span id="dock-model-name">Veo 3.1 - Lite</span>
-        </div>
-
+        <!-- CREDITS -->
         <div class="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-amber-300 font-medium shrink-0">
           <span>💎</span>
           <span id="dock-credits">5000 Cr</span>
         </div>
 
+        <!-- EXPIRY -->
         <div class="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 font-medium shrink-0">
           <span>⏳</span>
           <span id="dock-expiry">30d Left</span>
         </div>
 
+        <!-- DEVICES -->
         <button type="button" onclick="openDeviceManagerModal()" 
           class="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-blue-950/60 hover:bg-blue-900/80 border border-blue-800 text-[11px] text-blue-300 font-medium transition shrink-0" 
           title="Manage Linked Devices">
@@ -247,38 +260,33 @@
           <span id="dock-device-count">Devices (1/2)</span>
         </button>
 
-        <button id="btn-local-download" type="button" onclick="downloadGeneratedVideo(event)"
-          class="hidden items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-[11px] font-bold shadow-lg transition shrink-0">
-          <i data-lucide="download" class="w-3.5 h-3.5 stroke-[2.5]"></i>
-          <span class="hidden sm:inline">Download</span>
-        </button>
-
+        <!-- RELOAD -->
         <button type="button" onclick="reloadStreamFrame()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Reload Engine">
           <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
         </button>
 
+        <!-- MINIMIZE -->
         <button type="button" onclick="collapseDock()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Minimize Pill">
           <i data-lucide="minus" class="w-3.5 h-3.5"></i>
         </button>
 
+        <!-- LOGOUT -->
         <button type="button" onclick="logoutClient()" class="p-1 text-zinc-400 hover:text-red-400 rounded-md hover:bg-zinc-800 transition shrink-0" title="Exit">
           <i data-lucide="x" class="w-3.5 h-3.5"></i>
         </button>
       </div>
 
       <div id="dock-collapsed" style="display: none;" class="glass-pill w-11 h-11 rounded-full items-center justify-center cursor-pointer border border-emerald-500/40 hover:scale-105 transition shadow-2xl relative" title="Click to open">
-        <span id="collapsed-logo-box" class="w-6 h-6 flex items-center justify-center pointer-events-none">
-          <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
-        </span>
+        <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
       </div>
 
     </div>
 
   </div>
 
-  <!-- ================= 4. DEVICE MANAGER MODAL ================= -->
+  <!-- 4. DEVICE MANAGER MODAL -->
   <div id="device-modal" class="fixed inset-0 z-[999999] bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="w-full max-w-sm sm:max-w-md bg-[#151519] border border-[#27272f] p-5 sm:p-6 rounded-3xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+    <div class="w-full max-w-sm sm:max-w-md bg-[#151519] border border-[#27272f] p-5 sm:p-6 rounded-3xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto relative">
       
       <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
         <div class="flex items-center space-x-2.5">
@@ -290,8 +298,8 @@
             <p class="text-[11px] text-zinc-400">একটি অ্যাকাউন্ট একই সাথে ২টি ডিভাইসে চলবে</p>
           </div>
         </div>
-        <button onclick="closeDeviceManagerModal()" class="text-zinc-500 hover:text-white p-1">
-          <i data-lucide="x" class="w-4 h-4"></i>
+        <button type="button" onclick="closeDeviceManagerModal()" class="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
@@ -315,17 +323,14 @@
   </div>
 
   <script>
-    document.addEventListener('contextmenu', e => e.preventDefault());
-    document.addEventListener('keydown', e => {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
-        (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's'))
-      ) {
-        e.preventDefault();
-        return false;
+    // অ্যান্টি-ইন্সপেক্ট ব্লকার
+    window.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); return false; }, true);
+    document.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); return false; }, true);
+    window.addEventListener('keydown', e => {
+      if (e.keyCode === 123 || e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C','i','j','c'].includes(e.key)) || (e.ctrlKey && ['U','u','S','s'].includes(e.key))) {
+        e.preventDefault(); e.stopPropagation(); return false;
       }
-    });
+    }, true);
 
     const firebaseConfig = {
       apiKey: "AIzaSyDdtiWw6gzYFqSyuq2-ufFzmJ1PZyL2bCE",
@@ -393,7 +398,7 @@
           const screen = document.getElementById('maintenance-screen');
           if (m.active === true) {
             document.getElementById('maint-title').textContent = m.title || "সার্ভার রক্ষণাবেক্ষণ চলছে";
-            document.getElementById('maint-desc').textContent = m.message || "আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।";
+            document.getElementById('maint-desc').textContent = m.message || "আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত সেবা পুনরায় চালু হবে।";
             screen.classList.remove('hidden');
             screen.classList.add('flex');
             document.getElementById('live-stream-frame').src = 'about:blank';
@@ -407,77 +412,9 @@
     }
     listenToMaintenance();
 
-    let activeDownloadUrl = null;
-    function listenToGeneratedVideos() {
-      db.collection('settings').doc('latest_video').onSnapshot(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          const downloadBtn = document.getElementById('btn-local-download');
-          if (data.url) {
-            activeDownloadUrl = data.url;
-            downloadBtn.classList.remove('hidden');
-            downloadBtn.classList.add('flex');
-            renderIcons();
-          }
-        }
-      });
-    }
-    listenToGeneratedVideos();
-
-    async function downloadGeneratedVideo(e) {
-      if (e) e.preventDefault();
-      if (!activeDownloadUrl) return;
-
-      const btn = document.getElementById('btn-local-download');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = `<span class="animate-spin text-xs">⏳</span> Downloading...`;
-
-      try {
-        const res = await fetch(activeDownloadUrl);
-        const blob = await res.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = blobUrl;
-        a.download = `google-flow-${Date.now()}.mp4`;
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(blobUrl);
-        }, 1000);
-      } catch (err) {
-        window.open(activeDownloadUrl, '_blank');
-      } finally {
-        btn.innerHTML = originalText;
-        renderIcons();
-      }
-    }
-
-    function listenToSiteConfig() {
-      db.collection('settings').doc('site_config').onSnapshot(doc => {
-        if (doc.exists) {
-          const cfg = doc.data();
-          if (typeof cfg.privacyActive !== 'undefined') setPrivacyBlackout(cfg.privacyActive === true);
-          if (cfg.siteName) {
-            document.getElementById('page-title').textContent = cfg.siteName;
-            document.getElementById('login-site-name').textContent = cfg.siteName;
-          }
-          if (cfg.dockLogoUrl) {
-            const logoImg = `<img src="${cfg.dockLogoUrl}" class="w-full h-full object-contain rounded-full pointer-events-none" alt="Logo">`;
-            document.getElementById('dock-icon-box').innerHTML = logoImg;
-            document.getElementById('collapsed-logo-box').innerHTML = logoImg;
-            document.getElementById('login-logo-container').innerHTML = `<img src="${cfg.dockLogoUrl}" class="w-full h-full object-contain p-2" alt="Logo">`;
-          }
-        }
-      });
-    }
-    listenToSiteConfig();
-
     let currentSessionUser = null;
     let userDocUnsubscribe = null;
+    let slotDocUnsubscribe = null;
     let assignedStreamUrl = "";
     let assignedSlotNumber = 1;
     let currentSlotDocId = null;
@@ -486,7 +423,92 @@
     const streamFrame = document.getElementById('live-stream-frame');
     const frameLoader = document.getElementById('frame-loader');
 
-    // ================= ৩টি স্লটের ডায়নামিক ক্লাউডফ্লেয়ার ইউআরএল অ্যাসাইনমেন্ট =================
+    // ================= ৩-ডট ডাউনলোড অটো-ইন্টারসেপ্টর (সরাসরি লোকাল স্টোরেজে সেভ) =================
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.action === 'TRIGGER_LOCAL_DOWNLOAD') {
+        const url = e.data.url;
+        if (url) executeLocalDownload(url, e.data.filename);
+      }
+    });
+
+    let lastHandledDownloadTime = 0;
+    function listenToDownloads(slotNumber) {
+      if (slotDocUnsubscribe) slotDocUnsubscribe();
+      slotDocUnsubscribe = db.collection('server_slots').doc(`slot_${slotNumber}`).onSnapshot(doc => {
+        if (!doc.exists) return;
+        const dl = doc.data().latest_download;
+        if (dl && dl.url && Number(dl.time) > lastHandledDownloadTime) {
+          lastHandledDownloadTime = Number(dl.time);
+          executeLocalDownload(dl.url, dl.filename);
+        }
+      });
+    }
+
+    async function executeLocalDownload(url, filename = 'google-flow-media.mp4') {
+      try {
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename || `flow-download-${Date.now()}.mp4`;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 2000);
+      } catch (e) {
+        window.open(url, '_blank');
+      }
+    }
+
+    // ================= প্লাস (+) বাটন লোকাল ডিভাইস ফাইল ব্রিজ =================
+    const localFileInput = document.getElementById('local-device-file-input');
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.action === 'OPEN_LOCAL_DEVICE_PICKER') {
+        localFileInput.click();
+      }
+    });
+
+    localFileInput.addEventListener('change', () => {
+      if (!localFileInput.files || localFileInput.files.length === 0) return;
+      const file = localFileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        // সরাসরি মেমোরি ট্রান্সফারে গুগল ফ্লোতে ফাইল ইনজেক্ট করা
+        streamFrame.contentWindow.postMessage({
+          action: 'INJECT_FILE_TO_FLOW',
+          base64: reader.result,
+          name: file.name,
+          type: file.type
+        }, '*');
+      };
+
+      reader.readAsDataURL(file);
+      localFileInput.value = '';
+    });
+
+    async function switchActiveServer(slotNum) {
+      slotNum = parseInt(slotNum);
+      assignedSlotNumber = slotNum;
+      frameLoader.classList.remove('hidden');
+
+      listenToDownloads(assignedSlotNumber);
+
+      try {
+        const slotDoc = await db.collection('server_slots').doc(`slot_${slotNum}`).get();
+        if (slotDoc.exists && slotDoc.data().url) {
+          assignedStreamUrl = slotDoc.data().url;
+          currentSlotDocId = `slot_${slotNum}`;
+          loadStream(assignedStreamUrl);
+        } else {
+          assignedStreamUrl = `http://15.235.246.137:${3000 + slotNum}`;
+          loadStream(assignedStreamUrl);
+        }
+      } catch (err) {
+        reloadStreamFrame();
+      }
+    }
+
     async function requestStudioSlot(user) {
       const slotsRef = db.collection('server_slots');
       
@@ -496,6 +518,7 @@
           const doc = myClaim.docs[0];
           currentSlotDocId = doc.id;
           assignedSlotNumber = doc.data().slotNumber || (doc.data().port - 3000);
+          document.getElementById('server-selector').value = String(assignedSlotNumber);
           return doc.data().url || `http://15.235.246.137:${doc.data().port}`;
         }
 
@@ -505,6 +528,7 @@
           const doc = sorted[0];
           currentSlotDocId = doc.id;
           assignedSlotNumber = doc.data().slotNumber || (doc.data().port - 3000);
+          document.getElementById('server-selector').value = String(assignedSlotNumber);
           
           await doc.ref.update({
             isBusy: true,
@@ -552,6 +576,7 @@
               const slot = sorted[0];
               currentSlotDocId = slot.id;
               assignedSlotNumber = slot.data().slotNumber || (slot.data().port - 3000);
+              document.getElementById('server-selector').value = String(assignedSlotNumber);
 
               await slot.ref.update({
                 isBusy: true,
@@ -635,7 +660,7 @@
         return false;
       }
       if (user.expiryDate && new Date(user.expiryDate) < new Date()) {
-        err.textContent = "আপনার অ্যাকাউন্টের মেয়াদ শেষ হয়ে গেছে। অ্যাডমিনের সাথে যোগাযোগ করুন।";
+        err.textContent = "আপনার অ্যাকাউন্টের মেয়াদ শেষ হয়ে গেছে।";
         err.classList.remove('hidden');
         return false;
       }
@@ -762,11 +787,11 @@
       authScreen.classList.add('hidden');
       mainStudio.classList.remove('hidden');
 
-      const assigned = user.assignedModel || 'Veo 3.1 - Lite';
-      document.getElementById('dock-model-name').textContent = assigned;
       document.getElementById('dock-credits').textContent = `${user.credits || '5000'} Cr`;
       document.getElementById('dock-expiry').textContent = calculateRemainingDays(user.expiryDate);
-      document.getElementById('dock-slot-label').textContent = `Slot #${assignedSlotNumber}`;
+      document.getElementById('server-selector').value = String(assignedSlotNumber);
+
+      listenToDownloads(assignedSlotNumber);
 
       if (userDocUnsubscribe) userDocUnsubscribe();
       userDocUnsubscribe = db.collection('users').doc(user.id).onSnapshot(doc => {
@@ -790,25 +815,25 @@
       renderIcons();
     }
 
-    // অপ্টিমাইজড ফাস্ট লোডার (ব্ল্যাক স্ক্রিন ফিক্স)
     function loadStream(url) {
       frameLoader.classList.remove('hidden');
       const cleanUrl = (url || '').split('?')[0].replace(/\/+$/, '');
       streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=8&cursor=local&control_bar=0&show_control_bar=0&sidebar=0&kasm_sidebar=0`;
       
       streamFrame.onload = () => {
-        setTimeout(() => frameLoader.classList.add('hidden'), 400);
+        setTimeout(() => frameLoader.classList.add('hidden'), 500);
       };
-      setTimeout(() => frameLoader.classList.add('hidden'), 1200);
+      setTimeout(() => frameLoader.classList.add('hidden'), 1500);
     }
 
     function reloadStreamFrame() {
       frameLoader.classList.remove('hidden');
       const cleanUrl = (assignedStreamUrl || '').split('?')[0].replace(/\/+$/, '');
       streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=8&cursor=local&control_bar=0&show_control_bar=0&sidebar=0&kasm_sidebar=0&t=${Date.now()}`;
-      setTimeout(() => frameLoader.classList.add('hidden'), 1200);
+      setTimeout(() => frameLoader.classList.add('hidden'), 1500);
     }
 
+    // ডিভাইস ম্যানেজার মডাল
     let html5QrCode = null;
     function openDeviceManagerModal() {
       if (!currentSessionUser) return;
@@ -830,12 +855,12 @@
             <div>
               <div class="font-medium text-white flex items-center space-x-1.5">
                 <span>${dev.name}</span>
-                ${isCurrent ? '<span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-900 px-1.5 py-0.2 rounded-full">This Device</span>' : ''}
+                ${isCurrent ? '<span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-900 px-1.5 py-0.2 rounded-full font-bold">This Device</span>' : ''}
               </div>
               <div class="text-[10px] font-mono text-zinc-500">${dev.id.substring(0, 14)}...</div>
             </div>
           </div>
-          ${!isCurrent ? `<button onclick="unlinkDevice('${dev.id}')" class="text-xs text-red-400 hover:text-red-300 font-medium px-2 py-1 rounded-lg hover:bg-red-950/30 transition">Unlink</button>` : ''}
+          ${!isCurrent ? `<button type="button" onclick="unlinkDevice('${dev.id}')" class="text-xs text-red-400 hover:text-red-300 font-medium px-2.5 py-1 rounded-lg hover:bg-red-950/30 transition cursor-pointer">Unlink</button>` : ''}
         `;
         list.appendChild(item);
       });
@@ -846,18 +871,30 @@
         btnScan.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i><span>২টি ডিভাইস লিমিট পূর্ণ</span>`;
       } else {
         btnScan.disabled = false;
-        btnScan.className = "w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs rounded-xl transition flex items-center justify-center space-x-2 shadow-lg";
+        btnScan.className = "w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs rounded-xl transition flex items-center justify-center space-x-2 shadow-lg cursor-pointer";
         btnScan.innerHTML = `<i data-lucide="camera" class="w-4 h-4"></i><span>Scan QR to Link 2nd Device</span>`;
       }
 
-      modal.classList.replace('hidden', 'flex');
+      modal.style.setProperty('display', 'flex', 'important');
+      modal.classList.remove('hidden');
       renderIcons();
     }
 
     function closeDeviceManagerModal() {
-      stopQrScanner();
-      document.getElementById('device-modal').classList.replace('flex', 'hidden');
+      try { stopQrScanner(); } catch(e){}
+      const modal = document.getElementById('device-modal');
+      if (modal) {
+        modal.style.setProperty('display', 'none', 'important');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
     }
+
+    document.getElementById('device-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'device-modal') {
+        closeDeviceManagerModal();
+      }
+    });
 
     async function unlinkDevice(deviceId) {
       if (!currentSessionUser) return;
@@ -893,11 +930,17 @@
     }
 
     function stopQrScanner() {
-      if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-          html5QrCode.clear();
-          html5QrCode = null;
-        }).catch(() => {});
+      try {
+        if (html5QrCode) {
+          html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            html5QrCode = null;
+          }).catch(() => {
+            html5QrCode = null;
+          });
+        }
+      } catch(err) {
+        html5QrCode = null;
       }
       const wrap = document.getElementById('scanner-wrapper');
       if (wrap) {
@@ -958,6 +1001,7 @@
         } catch(e) {}
       }
       if (userDocUnsubscribe) userDocUnsubscribe();
+      if (slotDocUnsubscribe) slotDocUnsubscribe();
       localStorage.removeItem('flow_active_uid');
       currentSessionUser = null;
       streamFrame.src = 'about:blank';
