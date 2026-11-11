@@ -38,8 +38,9 @@
       justify-content: center;
     }
     .stream-container iframe {
-      width: 100vw;
+      width: calc(100vw + 10px);
       height: 100vh;
+      margin-left: -10px;
       border: none;
       display: block;
       background: #000;
@@ -266,6 +267,11 @@
           <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
         </button>
 
+        <!-- DEDICATED SAFE BACK BUTTON (EXACTLY TO THE LEFT OF MINIMIZE) -->
+        <button type="button" onclick="triggerSafeBack()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Back / Close Section">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        </button>
+
         <!-- MINIMIZE -->
         <button type="button" onclick="collapseDock()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Minimize Pill">
           <i data-lucide="minus" class="w-3.5 h-3.5"></i>
@@ -424,69 +430,164 @@
     const streamFrame = document.getElementById('live-stream-frame');
     const frameLoader = document.getElementById('frame-loader');
 
-    // ================= ৩-ডট ডাউনলোড অটো-ইন্টারসেপ্টর (সরাসরি লোকাল স্টোরেজে সেভ) =================
-    let lastHandledDownloadTime = 0;
+    // ================= ডেডিকেটেড সেইফ ব্যাক বাটন ফাংশন (প্রজেক্টের বাইরে যাবে না) =================
+    async function triggerSafeBack() {
+      if (!assignedSlotNumber) return;
+      try {
+        await db.collection('server_slots').doc(`slot_${assignedSlotNumber}`).set({
+          back_trigger: Date.now()
+        }, { merge: true });
+      } catch (e) {}
+    }
+
+    // ================= ৩-ডট ডাউনলোড অটো-ইন্টারসেপ্টর (আপলোডের মতো সরাসরি ফায়ারস্টোর মেমোরি ব্রিজ) =================
+    let lastHandledDownloadTime = -1;
+    let lastHandledUploadTimestamp = -1;
+
+    function triggerBrowserBlobDownload(blob, filename) {
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = blobUrl;
+      a.download = filename || `flow-video-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+        a.remove();
+      }, 5000);
+    }
+
     function listenToDownloads(slotNumber) {
       if (slotDocUnsubscribe) slotDocUnsubscribe();
-      slotDocUnsubscribe = db.collection('server_slots').doc(`slot_${slotNumber}`).onSnapshot(doc => {
+      let isInitialSlotSnap = true;
+
+      slotDocUnsubscribe = db.collection('server_slots').doc(`slot_${slotNumber}`).onSnapshot(async (doc) => {
         if (!doc.exists) return;
         const data = doc.data();
-
         const dl = data.latest_download;
-        if (dl && dl.url && Number(dl.time) > lastHandledDownloadTime) {
-          lastHandledDownloadTime = Number(dl.time);
-          executeLocalDownload(dl.url, dl.filename);
+        const upReq = Number(data.upload_request_time || 0);
+
+        if (isInitialSlotSnap) {
+          isInitialSlotSnap = false;
+          lastHandledDownloadTime = dl ? Number(dl.time || 0) : 0;
+          lastHandledUploadTimestamp = upReq;
+          return;
         }
 
-        const upReq = Number(data.upload_request_time || 0);
-        if (upReq > lastHandledUploadTimestamp) {
+        if (dl && Number(dl.time || 0) !== lastHandledDownloadTime) {
+          lastHandledDownloadTime = Number(dl.time || 0);
+          let downloadedViaChunks = false;
+
+          if (dl.chunkCount && Number(dl.chunkCount) > 0) {
+            try {
+              const totalChunks = Number(dl.chunkCount);
+              const chunkPromises = [];
+              for (let c = 0; c < totalChunks; c++) {
+                chunkPromises.push(
+                  db.collection('server_slots').doc(`slot_${slotNumber}`).collection('dl_chunks').doc(`chunk_${c}`).get()
+                );
+              }
+              const chunkDocs = await Promise.all(chunkPromises);
+              let fullBase64 = '';
+              for (let c = 0; c < chunkDocs.length; c++) {
+                if (chunkDocs[c].exists) {
+                  fullBase64 += (chunkDocs[c].data().data || '');
+                }
+              }
+              if (fullBase64.length > 0) {
+                const mimeType = dl.mime || 'video/mp4';
+                const dataUri = fullBase64.startsWith('data:') ? fullBase64 : `data:${mimeType};base64,${fullBase64}`;
+                const res = await fetch(dataUri);
+                const blob = await res.blob();
+                triggerBrowserBlobDownload(blob, dl.filename || `flow-video-${Date.now()}.mp4`);
+                downloadedViaChunks = true;
+              }
+            } catch (err) {}
+          }
+
+          if (!downloadedViaChunks && dl.dataUrl) {
+            try {
+              const res = await fetch(dl.dataUrl);
+              const blob = await res.blob();
+              triggerBrowserBlobDownload(blob, dl.filename || `flow-download-${Date.now()}.mp4`);
+              downloadedViaChunks = true;
+            } catch (e) {}
+          }
+
+          if (!downloadedViaChunks && dl.storageUrl) {
+            const ifr = document.createElement('iframe');
+            ifr.style.display = 'none';
+            ifr.src = dl.storageUrl;
+            document.body.appendChild(ifr);
+            setTimeout(() => ifr.remove(), 60000);
+          }
+        }
+
+        if (upReq > 0 && upReq !== lastHandledUploadTimestamp) {
           lastHandledUploadTimestamp = upReq;
           localFileInput.click();
         }
       });
     }
 
-    async function executeLocalDownload(url, filename = 'google-flow-media.mp4') {
-      try {
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = filename || `flow-download-${Date.now()}.mp4`;
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => a.remove(), 2000);
-      } catch (e) {
-        window.open(url, '_blank');
-      }
-    }
-
-    // ================= প্লাস (+) বাটন লোকাল ডিভাইস ফাইল ব্রিজ =================
+    // ================= প্লাস (+) বাটন লোকাল ডিভাইস ফাইল ব্রিজ (সিঙ্গেল আপলোড লক) =================
     const localFileInput = document.getElementById('local-device-file-input');
-    let lastHandledUploadTimestamp = 0;
+    let isUploadingLocalFile = false;
 
-    localFileInput.addEventListener('change', async () => {
-      if (!localFileInput.files || localFileInput.files.length === 0) return;
+    localFileInput.addEventListener('change', () => {
+      if (!localFileInput.files || localFileInput.files.length === 0 || isUploadingLocalFile) return;
+      isUploadingLocalFile = true;
       const file = localFileInput.files[0];
+      localFileInput.value = '';
 
-      try {
-        const fileRef = storage.ref().child('client_uploads/' + Date.now() + '_' + file.name);
-        await fileRef.put(file);
-        const downloadUrl = await fileRef.getDownloadURL();
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (file.type.startsWith('image/')) {
+          const img = new Image();
+          img.onload = async () => {
+            try {
+              const canvas = document.createElement('canvas');
+              let w = img.width, h = img.height;
+              const max = 1400;
+              if (w > max || h > max) {
+                if (w > h) { h = Math.round((h * max) / w); w = max; }
+                else { w = Math.round((w * max) / h); h = max; }
+              }
+              canvas.width = w; canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, w, h);
+              const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.82);
 
-        await db.collection('server_slots').doc(`slot_${assignedSlotNumber}`).set({
-          pendingUpload: {
-            url: downloadUrl,
-            name: file.name,
-            type: file.type || 'image/jpeg',
-            time: Date.now()
-          }
-        }, { merge: true });
-      } catch(err) {
-        alert("ফাইল আপলোড ব্যর্থ হয়েছে: " + err.message);
-      } finally {
-        localFileInput.value = '';
-      }
+              await db.collection('server_slots').doc(`slot_${assignedSlotNumber}`).set({
+                pendingUpload: {
+                  base64: optimizedBase64,
+                  name: file.name,
+                  type: 'image/jpeg',
+                  time: Date.now()
+                }
+              }, { merge: true });
+            } finally {
+              isUploadingLocalFile = false;
+            }
+          };
+          img.onerror = () => { isUploadingLocalFile = false; };
+          img.src = reader.result;
+        } else {
+          db.collection('server_slots').doc(`slot_${assignedSlotNumber}`).set({
+            pendingUpload: {
+              base64: reader.result,
+              name: file.name,
+              type: file.type || 'application/octet-stream',
+              time: Date.now()
+            }
+          }, { merge: true }).finally(() => {
+            isUploadingLocalFile = false;
+          });
+        }
+      };
+      reader.onerror = () => { isUploadingLocalFile = false; };
+      reader.readAsDataURL(file);
     });
 
     async function switchActiveServer(slotNum) {
