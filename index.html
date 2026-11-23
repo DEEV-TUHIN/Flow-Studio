@@ -10,7 +10,6 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -38,9 +37,9 @@
       justify-content: center;
     }
     .stream-container iframe {
-      width: calc(100vw + 10px);
+      width: 100vw;
       height: 100vh;
-      margin-left: -10px;
+      margin-left: 0;
       border: none;
       display: block;
       background: #000;
@@ -84,9 +83,6 @@
 </head>
 <body class="flex flex-col h-screen w-screen overflow-hidden select-none bg-black" oncontextmenu="return false;">
 
-  <!-- লোকাল ফাইল পিকার -->
-  <input type="file" id="local-device-file-input" accept="image/*,video/*" class="hidden">
-
   <!-- 0. MAINTENANCE OVERLAY -->
   <div id="maintenance-screen" class="fixed inset-0 z-[9999999] bg-black/95 backdrop-blur-2xl hidden flex-col items-center justify-center p-4 text-center select-none">
     <div class="max-w-md w-full bg-[#111114] border border-amber-500/30 p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-4">
@@ -107,35 +103,6 @@
       </div>
       <h3 class="text-base font-semibold text-white tracking-wide">Syncing Ultra Studio Engine</h3>
       <p class="text-xs text-zinc-500 max-w-sm text-center">Connecting dedicated AI neural pipelines. Please wait a moment...</p>
-    </div>
-  </div>
-
-  <!-- 0.2 LIVE WAITING QUEUE OVERLAY -->
-  <div id="queue-screen" class="fixed inset-0 z-[999999] bg-black/90 backdrop-blur-xl hidden flex-col items-center justify-center p-4 text-center select-none">
-    <div class="max-w-md w-full bg-[#111114] border border-blue-500/30 p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-5">
-      <div class="w-16 h-16 rounded-3xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
-        <i data-lucide="clock" class="w-8 h-8 animate-pulse"></i>
-      </div>
-      <div>
-        <h2 class="text-lg font-bold text-white tracking-wide">সবগুলো সার্ভার বর্তমানে ব্যস্ত</h2>
-        <p class="text-xs text-zinc-400 mt-1">অন্যান্য গ্রাহকরা কাজ করছেন। সার্ভার ফাঁকা হওয়ামাত্রই আপনি সরাসরি প্রবেশ করবেন।</p>
-      </div>
-
-      <div class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-around text-center">
-        <div>
-          <div class="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">আপনার পজিশন</div>
-          <div id="queue-position" class="text-2xl font-black text-blue-400 mt-0.5">#১</div>
-        </div>
-        <div class="h-8 border-r border-zinc-800"></div>
-        <div>
-          <div class="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">আনুমানিক অপেক্ষা</div>
-          <div id="queue-estimated" class="text-base font-bold text-amber-300 font-mono mt-1">~২ মিনিট</div>
-        </div>
-      </div>
-
-      <button type="button" onclick="cancelQueueWaiting()" class="text-xs text-zinc-500 hover:text-red-400 transition underline">
-        অপেক্ষা বাতিল করে লগআউট করুন
-      </button>
     </div>
   </div>
 
@@ -213,7 +180,7 @@
   <div id="main-studio" class="hidden relative w-full h-full flex flex-col bg-black">
 
     <div class="stream-container">
-      <iframe id="live-stream-frame" src="about:blank" allow="autoplay; fullscreen;"></iframe>
+      <iframe id="live-stream-frame" src="about:blank" allow="autoplay; fullscreen; clipboard-read; clipboard-write; display-capture;"></iframe>
       
       <div id="frame-loader" class="absolute inset-0 bg-black flex flex-col items-center justify-center space-y-3 z-10 transition-opacity duration-300">
         <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -268,7 +235,7 @@
         </button>
 
         <!-- DEDICATED SAFE BACK BUTTON (EXACTLY TO THE LEFT OF MINIMIZE) -->
-        <button type="button" onclick="triggerSafeBack()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Back / Close Section">
+        <button type="button" onclick="triggerSafeBack()" class="p-1 text-zinc-400 hover:text-white rounded-md hover:bg-zinc-800 transition shrink-0" title="Back to Studio Home">
           <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
         </button>
 
@@ -350,7 +317,6 @@
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const storage = firebase.storage();
 
     function renderIcons() { if (window.lucide) lucide.createIcons(); }
 
@@ -373,7 +339,18 @@
       renderIcons();
     }
 
+    function normalizeProxyUrl(raw, fallbackSlot) {
+      const val = (raw || '').trim();
+      if (!val) {
+        return fallbackSlot ? `http://15.235.246.137:${4050 + fallbackSlot}` : '';
+      }
+      const noQuery = val.split('?')[0].replace(/\/+$/, '');
+      if (noQuery.startsWith('http://') || noQuery.startsWith('https://')) return noQuery;
+      return `https://${noQuery}`;
+    }
+
     let isPrivacyActive = false;
+    let isMaintenanceActive = false;
     function setPrivacyBlackout(active) {
       const privScreen = document.getElementById('admin-privacy-screen');
       const streamFrame = document.getElementById('live-stream-frame');
@@ -384,8 +361,8 @@
         if (streamFrame.src !== 'about:blank') streamFrame.src = 'about:blank';
       } else {
         privScreen.style.setProperty('display', 'none', 'important');
-        if (currentSessionUser && !document.getElementById('main-studio').classList.contains('hidden')) {
-          if (streamFrame.src === 'about:blank' || streamFrame.src.includes('about:blank')) reloadStreamFrame();
+        if (currentSessionUser && !isMaintenanceActive && !document.getElementById('main-studio').classList.contains('hidden')) {
+          if (streamFrame.src === 'about:blank' || streamFrame.src.includes('about:blank')) loadStream(assignedStreamUrl);
         }
       }
     }
@@ -403,7 +380,8 @@
         if (doc.exists) {
           const m = doc.data();
           const screen = document.getElementById('maintenance-screen');
-          if (m.active === true) {
+          isMaintenanceActive = m.active === true;
+          if (isMaintenanceActive) {
             document.getElementById('maint-title').textContent = m.title || "সার্ভার রক্ষণাবেক্ষণ চলছে";
             document.getElementById('maint-desc').textContent = m.message || "আমরা সিস্টেম আপগ্রেড করছি। খুব দ্রুত আমাদের সেবা পুনরায় চালু হবে।";
             screen.classList.remove('hidden');
@@ -412,318 +390,165 @@
           } else {
             screen.classList.add('hidden');
             screen.classList.remove('flex');
-            if (currentSessionUser && !isPrivacyActive) reloadStreamFrame();
+            if (currentSessionUser && !isPrivacyActive && assignedStreamUrl) loadStream(assignedStreamUrl);
           }
         }
       });
     }
     listenToMaintenance();
 
+    function listenToBranding() {
+      db.collection('settings').doc('site_config').onSnapshot(doc => {
+        if (!doc.exists) return;
+        const cfg = doc.data() || {};
+        if (cfg.siteName) {
+          document.title = cfg.siteName;
+          const titleEl = document.getElementById('page-title');
+          const loginNameEl = document.getElementById('login-site-name');
+          if (titleEl) titleEl.textContent = cfg.siteName;
+          if (loginNameEl) loginNameEl.textContent = cfg.siteName;
+        }
+        if (cfg.dockLogoUrl) {
+          const fav = document.getElementById('siteFavicon');
+          if (fav) fav.href = cfg.dockLogoUrl;
+          const logoBox = document.getElementById('login-logo-container');
+          if (logoBox) {
+            logoBox.innerHTML = `<img src="${cfg.dockLogoUrl}" alt="Logo" class="w-full h-full object-cover">`;
+          }
+        }
+      });
+    }
+    listenToBranding();
+
     let currentSessionUser = null;
     let userDocUnsubscribe = null;
-    let slotDocUnsubscribe = null;
     let assignedStreamUrl = "";
     let assignedSlotNumber = 1;
-    let currentSlotDocId = null;
+    const liveProxySlots = { 1: null, 2: null, 3: null };
+
     const authScreen = document.getElementById('auth-screen');
     const mainStudio = document.getElementById('main-studio');
     const streamFrame = document.getElementById('live-stream-frame');
     const frameLoader = document.getElementById('frame-loader');
 
-    // ================= ডেডিকেটেড সেইফ ব্যাক বাটন ফাংশন (প্রজেক্টের বাইরে যাবে না) =================
-    async function triggerSafeBack() {
-      if (!assignedSlotNumber) return;
-      try {
-        await db.collection('server_slots').doc(`slot_${assignedSlotNumber}`).set({
-          back_trigger: Date.now()
-        }, { merge: true });
-      } catch (e) {}
-    }
+    // ================= ৩টি রিভার্স প্রক্সি সার্ভারের রিয়েল-টাইম সিঙ্ক =================
+    function listenToProxyServers() {
+      db.collection('server_slots').onSnapshot(snap => {
+        snap.docs.forEach(doc => {
+          const s = doc.data() || {};
+          const num = Number(s.slotNumber || doc.id.replace('slot_', '') || 0);
+          if (num >= 1 && num <= 3) {
+            const clean = normalizeProxyUrl(s.url, 0);
+            liveProxySlots[num] = {
+              slotNumber: num,
+              url: clean,
+              proxyActive: s.proxyActive === true,
+              hasExplicitStatus: typeof s.proxyActive === 'boolean'
+            };
 
-    // ================= ৩-ডট ডাউনলোড অটো-ইন্টারসেপ্টর (আপলোডের মতো সরাসরি ফায়ারস্টোর মেমোরি ব্রিজ) =================
-    let lastHandledDownloadTime = -1;
-    let lastHandledUploadTimestamp = -1;
-
-    function triggerBrowserBlobDownload(blob, filename) {
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = blobUrl;
-      a.download = filename || `flow-video-${Date.now()}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        window.URL.revokeObjectURL(blobUrl);
-        a.remove();
-      }, 5000);
-    }
-
-    function listenToDownloads(slotNumber) {
-      if (slotDocUnsubscribe) slotDocUnsubscribe();
-      let isInitialSlotSnap = true;
-
-      slotDocUnsubscribe = db.collection('server_slots').doc(`slot_${slotNumber}`).onSnapshot(async (doc) => {
-        if (!doc.exists) return;
-        const data = doc.data();
-        const dl = data.latest_download;
-        const upReq = Number(data.upload_request_time || 0);
-
-        if (isInitialSlotSnap) {
-          isInitialSlotSnap = false;
-          lastHandledDownloadTime = dl ? Number(dl.time || 0) : 0;
-          lastHandledUploadTimestamp = upReq;
-          return;
-        }
-
-        if (dl && Number(dl.time || 0) !== lastHandledDownloadTime) {
-          lastHandledDownloadTime = Number(dl.time || 0);
-          let downloadedViaChunks = false;
-
-          if (dl.chunkCount && Number(dl.chunkCount) > 0) {
-            try {
-              const totalChunks = Number(dl.chunkCount);
-              const chunkPromises = [];
-              for (let c = 0; c < totalChunks; c++) {
-                chunkPromises.push(
-                  db.collection('server_slots').doc(`slot_${slotNumber}`).collection('dl_chunks').doc(`chunk_${c}`).get()
-                );
-              }
-              const chunkDocs = await Promise.all(chunkPromises);
-              let fullBase64 = '';
-              for (let c = 0; c < chunkDocs.length; c++) {
-                if (chunkDocs[c].exists) {
-                  fullBase64 += (chunkDocs[c].data().data || '');
-                }
-              }
-              if (fullBase64.length > 0) {
-                const mimeType = dl.mime || 'video/mp4';
-                const dataUri = fullBase64.startsWith('data:') ? fullBase64 : `data:${mimeType};base64,${fullBase64}`;
-                const res = await fetch(dataUri);
-                const blob = await res.blob();
-                triggerBrowserBlobDownload(blob, dl.filename || `flow-video-${Date.now()}.mp4`);
-                downloadedViaChunks = true;
-              }
-            } catch (err) {}
-          }
-
-          if (!downloadedViaChunks && dl.dataUrl) {
-            try {
-              const res = await fetch(dl.dataUrl);
-              const blob = await res.blob();
-              triggerBrowserBlobDownload(blob, dl.filename || `flow-download-${Date.now()}.mp4`);
-              downloadedViaChunks = true;
-            } catch (e) {}
-          }
-
-          if (!downloadedViaChunks && dl.storageUrl) {
-            const ifr = document.createElement('iframe');
-            ifr.style.display = 'none';
-            ifr.src = dl.storageUrl;
-            document.body.appendChild(ifr);
-            setTimeout(() => ifr.remove(), 60000);
-          }
-        }
-
-        if (upReq > 0 && upReq !== lastHandledUploadTimestamp) {
-          lastHandledUploadTimestamp = upReq;
-          localFileInput.click();
-        }
-      });
-    }
-
-    // ================= প্লাস (+) বাটন লোকাল ডিভাইস ফাইল ব্রিজ (সিঙ্গেল আপলোড লক) =================
-    const localFileInput = document.getElementById('local-device-file-input');
-    let isUploadingLocalFile = false;
-
-    localFileInput.addEventListener('change', () => {
-      if (!localFileInput.files || localFileInput.files.length === 0 || isUploadingLocalFile) return;
-      isUploadingLocalFile = true;
-      const file = localFileInput.files[0];
-      localFileInput.value = '';
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (file.type.startsWith('image/')) {
-          const img = new Image();
-          img.onload = async () => {
-            try {
-              const canvas = document.createElement('canvas');
-              let w = img.width, h = img.height;
-              const max = 1400;
-              if (w > max || h > max) {
-                if (w > h) { h = Math.round((h * max) / w); w = max; }
-                else { w = Math.round((w * max) / h); h = max; }
-              }
-              canvas.width = w; canvas.height = h;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, w, h);
-              const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.82);
-
-              await db.collection('server_slots').doc(`slot_${assignedSlotNumber}`).set({
-                pendingUpload: {
-                  base64: optimizedBase64,
-                  name: file.name,
-                  type: 'image/jpeg',
-                  time: Date.now()
-                }
-              }, { merge: true });
-            } finally {
-              isUploadingLocalFile = false;
-            }
-          };
-          img.onerror = () => { isUploadingLocalFile = false; };
-          img.src = reader.result;
-        } else {
-          db.collection('server_slots').doc(`slot_${assignedSlotNumber}`).set({
-            pendingUpload: {
-              base64: reader.result,
-              name: file.name,
-              type: file.type || 'application/octet-stream',
-              time: Date.now()
-            }
-          }, { merge: true }).finally(() => {
-            isUploadingLocalFile = false;
-          });
-        }
-      };
-      reader.onerror = () => { isUploadingLocalFile = false; };
-      reader.readAsDataURL(file);
-    });
-
-    async function switchActiveServer(slotNum) {
-      slotNum = parseInt(slotNum);
-      assignedSlotNumber = slotNum;
-      frameLoader.classList.remove('hidden');
-
-      listenToDownloads(assignedSlotNumber);
-
-      try {
-        const slotDoc = await db.collection('server_slots').doc(`slot_${slotNum}`).get();
-        if (slotDoc.exists && slotDoc.data().url) {
-          assignedStreamUrl = slotDoc.data().url;
-          currentSlotDocId = `slot_${slotNum}`;
-          loadStream(assignedStreamUrl);
-        } else {
-          assignedStreamUrl = `http://15.235.246.137:${3000 + slotNum}`;
-          loadStream(assignedStreamUrl);
-        }
-      } catch (err) {
-        reloadStreamFrame();
-      }
-    }
-
-    async function requestStudioSlot(user) {
-      const slotsRef = db.collection('server_slots');
-      
-      try {
-        const myClaim = await slotsRef.where('activeUid', '==', user.id).get();
-        if (!myClaim.empty) {
-          const doc = myClaim.docs[0];
-          currentSlotDocId = doc.id;
-          assignedSlotNumber = doc.data().slotNumber || (doc.data().port - 3000);
-          document.getElementById('server-selector').value = String(assignedSlotNumber);
-          return doc.data().url || `http://15.235.246.137:${doc.data().port}`;
-        }
-
-        const freeSnap = await slotsRef.where('isBusy', '==', false).get();
-        if (!freeSnap.empty) {
-          const sorted = freeSnap.docs.sort((a,b) => (a.data().port || 0) - (b.data().port || 0));
-          const doc = sorted[0];
-          currentSlotDocId = doc.id;
-          assignedSlotNumber = doc.data().slotNumber || (doc.data().port - 3000);
-          document.getElementById('server-selector').value = String(assignedSlotNumber);
-          
-          await doc.ref.update({
-            isBusy: true,
-            activeUid: user.id,
-            userEmail: user.email,
-            claimedAt: Date.now()
-          });
-
-          return doc.data().url || `http://15.235.246.137:${doc.data().port}`;
-        }
-      } catch(e) {}
-
-      return await enterWaitingQueue(user);
-    }
-
-    let queueListener = null;
-    function enterWaitingQueue(user) {
-      return new Promise(async (resolve) => {
-        const queueRef = db.collection('queue_pool');
-        const qDoc = queueRef.doc(user.id);
-        
-        await qDoc.set({
-          uid: user.id,
-          email: user.email,
-          enteredAt: Date.now()
-        }).catch(() => {});
-
-        document.getElementById('queue-screen').classList.remove('hidden');
-        document.getElementById('queue-screen').classList.add('flex');
-
-        queueListener = queueRef.orderBy('enteredAt', 'asc').onSnapshot(async (snap) => {
-          let pos = 1;
-          for (let doc of snap.docs) {
-            if (doc.id === user.id) break;
-            pos++;
-          }
-
-          document.getElementById('queue-position').textContent = `#${pos}`;
-          document.getElementById('queue-estimated').textContent = `~${pos * 2} মিনিট`;
-
-          if (pos === 1) {
-            const free = await db.collection('server_slots').where('isBusy', '==', false).get();
-            if (!free.empty) {
-              const sorted = free.docs.sort((a, b) => (a.data().port || 0) - (b.data().port || 0));
-              const slot = sorted[0];
-              currentSlotDocId = slot.id;
-              assignedSlotNumber = slot.data().slotNumber || (slot.data().port - 3000);
-              document.getElementById('server-selector').value = String(assignedSlotNumber);
-
-              await slot.ref.update({
-                isBusy: true,
-                activeUid: user.id,
-                userEmail: user.email,
-                claimedAt: Date.now()
-              });
-
-              await qDoc.delete().catch(() => {});
-              if (queueListener) queueListener();
-              document.getElementById('queue-screen').classList.add('hidden');
-              document.getElementById('queue-screen').classList.remove('flex');
-              resolve(slot.data().url || `http://15.235.246.137:${slot.data().port}`);
+            // বর্তমানে চালু থাকা সার্ভারের URL অ্যাডমিন প্যানেল থেকে আপডেট হলে স্বয়ংক্রিয়ভাবে রিলোড
+            if (
+              currentSessionUser &&
+              !mainStudio.classList.contains('hidden') &&
+              num === assignedSlotNumber &&
+              clean &&
+              clean !== assignedStreamUrl &&
+              !isPrivacyActive &&
+              !isMaintenanceActive
+            ) {
+              assignedStreamUrl = clean;
+              loadStream(assignedStreamUrl);
             }
           }
         });
       });
     }
+    listenToProxyServers();
 
-    async function cancelQueueWaiting() {
-      if (queueListener) queueListener();
-      if (currentSessionUser) {
-        await db.collection('queue_pool').doc(currentSessionUser.id).delete().catch(() => {});
-      }
-      document.getElementById('queue-screen').classList.add('hidden');
-      document.getElementById('queue-screen').classList.remove('flex');
-      logoutClient();
+    // ================= ডেডিকেটেড সেইফ ব্যাক বাটন (রিভার্স প্রক্সি হোমে ফেরা) =================
+    function triggerSafeBack() {
+      if (!assignedStreamUrl) return;
+      loadStream(assignedStreamUrl);
     }
 
-    async function releaseMySlot() {
-      if (currentSlotDocId) {
-        await db.collection('server_slots').doc(currentSlotDocId).update({
-          isBusy: false,
-          activeUid: "",
-          userEmail: "",
-          claimedAt: null
-        }).catch(() => {});
-        currentSlotDocId = null;
+    // ================= মাল্টি-ইউজার রিভার্স প্রক্সি সার্ভার সিলেক্টর (কোনো স্লট লক বা ওয়েটিং কিউ নেই) =================
+    async function resolveMultiUserProxyServer(preferredSlot) {
+      let slots = [1, 2, 3].map(n => liveProxySlots[n]).filter(Boolean);
+
+      if (slots.length === 0) {
+        try {
+          const snap = await db.collection('server_slots').get();
+          snap.docs.forEach(doc => {
+            const s = doc.data() || {};
+            const num = Number(s.slotNumber || doc.id.replace('slot_', '') || 0);
+            if (num >= 1 && num <= 3) {
+              liveProxySlots[num] = {
+                slotNumber: num,
+                url: normalizeProxyUrl(s.url, 0),
+                proxyActive: s.proxyActive === true,
+                hasExplicitStatus: typeof s.proxyActive === 'boolean'
+              };
+            }
+          });
+          slots = [1, 2, 3].map(n => liveProxySlots[n]).filter(Boolean);
+        } catch (e) {}
       }
+
+      const syncedSlots = slots.filter(s => s.url && s.proxyActive === true);
+      const validUrlSlots = slots.filter(s => s.url && (!s.hasExplicitStatus || s.proxyActive === true));
+      const anyUrlSlots = slots.filter(s => s.url);
+
+      const pref = Number(preferredSlot || localStorage.getItem('flow_preferred_slot') || 0);
+      let chosen = null;
+
+      if (pref >= 1 && pref <= 3) {
+        chosen = syncedSlots.find(s => s.slotNumber === pref) || validUrlSlots.find(s => s.slotNumber === pref);
+      }
+
+      if (!chosen) {
+        const pool = syncedSlots.length ? syncedSlots : (validUrlSlots.length ? validUrlSlots : anyUrlSlots);
+        if (pool.length > 0) {
+          chosen = pool[Math.floor(Math.random() * pool.length)];
+        }
+      }
+
+      if (chosen) {
+        assignedSlotNumber = chosen.slotNumber;
+        localStorage.setItem('flow_preferred_slot', String(assignedSlotNumber));
+        document.getElementById('server-selector').value = String(assignedSlotNumber);
+        return chosen.url;
+      }
+
+      assignedSlotNumber = 1;
+      document.getElementById('server-selector').value = '1';
+      return normalizeProxyUrl('', 1);
     }
 
-    window.addEventListener('beforeunload', () => {
-      releaseMySlot();
-    });
+    async function switchActiveServer(slotNum) {
+      slotNum = parseInt(slotNum, 10);
+      if (!(slotNum >= 1 && slotNum <= 3)) return;
+      assignedSlotNumber = slotNum;
+      localStorage.setItem('flow_preferred_slot', String(slotNum));
+      frameLoader.classList.remove('hidden');
+
+      if (liveProxySlots[slotNum] && liveProxySlots[slotNum].url) {
+        assignedStreamUrl = liveProxySlots[slotNum].url;
+        loadStream(assignedStreamUrl);
+        return;
+      }
+
+      try {
+        const slotDoc = await db.collection('server_slots').doc(`slot_${slotNum}`).get();
+        if (slotDoc.exists && slotDoc.data().url) {
+          assignedStreamUrl = normalizeProxyUrl(slotDoc.data().url, slotNum);
+        } else {
+          assignedStreamUrl = normalizeProxyUrl('', slotNum);
+        }
+        loadStream(assignedStreamUrl);
+      } catch (err) {
+        reloadStreamFrame();
+      }
+    }
 
     async function checkSavedSession() {
       const uid = localStorage.getItem('flow_active_uid');
@@ -737,7 +562,7 @@
 
             if (isAuthorized && validateUserStatus(data)) {
               currentSessionUser = data;
-              assignedStreamUrl = await requestStudioSlot(data);
+              assignedStreamUrl = await resolveMultiUserProxyServer();
               startStudio(data);
               return;
             }
@@ -812,11 +637,11 @@
         localStorage.setItem('flow_active_uid', userFound.id);
         currentSessionUser = userFound;
         
-        assignedStreamUrl = await requestStudioSlot(userFound);
+        assignedStreamUrl = await resolveMultiUserProxyServer();
         startStudio(userFound);
 
-      } catch (err) {
-        err.textContent = err.message;
+      } catch (loginErr) {
+        err.textContent = loginErr.message || "লগইন ত্রুটি হয়েছে!";
         err.classList.remove('hidden');
       }
     });
@@ -869,7 +694,7 @@
             if (userDoc.exists) {
               const u = { id: userDoc.id, ...userDoc.data() };
               currentSessionUser = u;
-              assignedStreamUrl = await requestStudioSlot(u);
+              assignedStreamUrl = await resolveMultiUserProxyServer();
               startStudio(u);
             }
           }
@@ -894,25 +719,40 @@
       document.getElementById('dock-expiry').textContent = calculateRemainingDays(user.expiryDate);
       document.getElementById('server-selector').value = String(assignedSlotNumber);
 
-      listenToDownloads(assignedSlotNumber);
-
       if (userDocUnsubscribe) userDocUnsubscribe();
       userDocUnsubscribe = db.collection('users').doc(user.id).onSnapshot(doc => {
-        if (doc.exists) {
-          const uData = doc.data();
-          currentSessionUser = { id: doc.id, ...uData };
-          const devices = uData.activeDevices || [];
-          document.getElementById('dock-device-count').textContent = `Devices (${devices.length}/2)`;
-          
-          const isStillValid = devices.some(d => d.id === myDeviceId);
-          if (!isStillValid) {
-            alert("আপনার এই ডিভাইসটির সেশন লগআউট করা হয়েছে।");
-            logoutClient();
-          }
+        if (!doc.exists) {
+          alert("আপনার অ্যাকাউন্টটি ডিলিট করা হয়েছে।");
+          logoutClient();
+          return;
+        }
+        const uData = doc.data();
+        currentSessionUser = { id: doc.id, ...uData };
+        document.getElementById('dock-credits').textContent = `${uData.credits || '5000'} Cr`;
+        document.getElementById('dock-expiry').textContent = calculateRemainingDays(uData.expiryDate);
+
+        if (uData.active === false) {
+          alert("আপনার অ্যাকাউন্টটি সাময়িক স্থগিত করা হয়েছে।");
+          logoutClient();
+          return;
+        }
+        if (uData.expiryDate && new Date(uData.expiryDate) < new Date()) {
+          alert("আপনার অ্যাকাউন্টের মেয়াদ শেষ হয়ে গেছে।");
+          logoutClient();
+          return;
+        }
+
+        const devices = uData.activeDevices || [];
+        document.getElementById('dock-device-count').textContent = `Devices (${devices.length}/2)`;
+        
+        const isStillValid = devices.some(d => d.id === myDeviceId);
+        if (!isStillValid) {
+          alert("আপনার এই ডিভাইসটির সেশন লগআউট করা হয়েছে।");
+          logoutClient();
         }
       });
 
-      if (!isPrivacyActive) {
+      if (!isPrivacyActive && !isMaintenanceActive) {
         loadStream(assignedStreamUrl);
       }
       renderIcons();
@@ -920,20 +760,24 @@
 
     function loadStream(url) {
       frameLoader.classList.remove('hidden');
-      const cleanUrl = (url || '').split('?')[0].replace(/\/+$/, '');
-      streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=8&cursor=local&control_bar=0&show_control_bar=0&sidebar=0&kasm_sidebar=0`;
+      const cleanUrl = normalizeProxyUrl(url, assignedSlotNumber);
+      assignedStreamUrl = cleanUrl;
+      streamFrame.src = `${cleanUrl}/`;
       
       streamFrame.onload = () => {
-        setTimeout(() => frameLoader.classList.add('hidden'), 500);
+        setTimeout(() => frameLoader.classList.add('hidden'), 400);
       };
-      setTimeout(() => frameLoader.classList.add('hidden'), 1500);
+      setTimeout(() => frameLoader.classList.add('hidden'), 2000);
     }
 
     function reloadStreamFrame() {
       frameLoader.classList.remove('hidden');
-      const cleanUrl = (assignedStreamUrl || '').split('?')[0].replace(/\/+$/, '');
-      streamFrame.src = `${cleanUrl}/?autoconnect=1&resize=scale&quality=8&cursor=local&control_bar=0&show_control_bar=0&sidebar=0&kasm_sidebar=0&t=${Date.now()}`;
-      setTimeout(() => frameLoader.classList.add('hidden'), 1500);
+      const cleanUrl = normalizeProxyUrl(assignedStreamUrl, assignedSlotNumber);
+      streamFrame.src = 'about:blank';
+      setTimeout(() => {
+        streamFrame.src = `${cleanUrl}/`;
+      }, 60);
+      setTimeout(() => frameLoader.classList.add('hidden'), 2000);
     }
 
     // ডিভাইস ম্যানেজার মডাল
@@ -1096,7 +940,6 @@
     }
 
     async function logoutClient() {
-      await releaseMySlot();
       if (currentSessionUser) {
         try {
           const updated = (currentSessionUser.activeDevices || []).filter(d => d.id !== myDeviceId);
@@ -1104,7 +947,6 @@
         } catch(e) {}
       }
       if (userDocUnsubscribe) userDocUnsubscribe();
-      if (slotDocUnsubscribe) slotDocUnsubscribe();
       localStorage.removeItem('flow_active_uid');
       currentSessionUser = null;
       streamFrame.src = 'about:blank';
